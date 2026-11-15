@@ -1,0 +1,24 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Arquivos temporários do Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Configurações locais do PyCharm
+.idea/
+
+# Cópias automáticas do Jupyter
+.ipynb_checkpoints/
+
+# Credenciais e configurações privadas
+.env
+.env.*
+!.env.example
+
+# Arquivos temporários do Windows
+Thumbs.db
+Desktop.ini
