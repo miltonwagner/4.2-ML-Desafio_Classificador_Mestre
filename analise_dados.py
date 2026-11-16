@@ -2850,3 +2850,2533 @@ print(
 print("\nO conjunto de teste reservado não foi utilizado.")
 print("\nBloco 15 concluído.")
 
+# %% ==========================================================
+# BLOCO 16 — SVM inicial com kernels linear e RBF
+# =============================================================
+
+from sklearn.svm import SVC
+
+print("\n" + "=" * 70)
+print("BLOCO 16 — SVM INICIAL: LINEAR E RBF")
+print("=" * 70)
+
+# Configurações iniciais, sem busca de hiperparâmetros.
+# C controla a penalização dos erros de classificação.
+# gamma é utilizado pelo kernel RBF; não pelo linear.
+# max_iter=-1 não impõe um limite fixo de iterações.
+classificador_svm_linear = SVC(
+    kernel="linear",
+    C=1.0,
+    tol=0.001,
+    cache_size=200,
+    class_weight=None,
+    max_iter=-1,
+    decision_function_shape="ovr",
+    random_state=SEMENTE_ALEATORIA,
+)
+
+classificador_svm_rbf = SVC(
+    kernel="rbf",
+    C=1.0,
+    gamma="scale",
+    tol=0.001,
+    cache_size=200,
+    class_weight=None,
+    max_iter=-1,
+    decision_function_shape="ovr",
+    random_state=SEMENTE_ALEATORIA,
+)
+
+# Cada Pipeline recebe uma cópia independente do preprocessador.
+pipeline_svm_linear = criar_pipeline(
+    classificador_svm_linear
+)
+
+pipeline_svm_rbf = criar_pipeline(
+    classificador_svm_rbf
+)
+
+print("\nModelos: SVM linear e SVM RBF")
+print("C: 1.0 nos dois modelos")
+print("Gamma do RBF: scale")
+print("Pesos das classes: sem ponderação adicional")
+print("Divisões da validação cruzada:", len(divisoes_cv))
+print("Registros disponíveis:", len(X_treino))
+
+print(
+    "\nO pré-processamento será ajustado dentro de cada divisão."
+)
+print(
+    "Serão usadas as mesmas divisões e métricas "
+    "dos classificadores anteriores."
+)
+print(
+    "Os dois kernels serão avaliados em sequência. "
+    "Aguarde a conclusão."
+)
+
+# Guarda os resultados separadamente para uso posterior.
+resultados_svm_cv = {}
+tabelas_svm_divisoes = {}
+tabelas_svm_resumo = {}
+tabelas_svm_tempos = {}
+
+configuracoes_svm = [
+    ("linear", "SVM linear — inicial", pipeline_svm_linear),
+    ("rbf", "SVM RBF — inicial", pipeline_svm_rbf),
+]
+
+for identificador, nome_modelo, pipeline_modelo in configuracoes_svm:
+    print("\n" + "-" * 70)
+    print("AVALIANDO:", nome_modelo)
+    print("-" * 70)
+
+    # Mantém o tratamento de convergência usado na Logística.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", ConvergenceWarning)
+
+        resultados = cross_validate(
+            estimator=pipeline_modelo,
+            X=X_treino,
+            y=y_treino,
+            cv=divisoes_cv,
+            scoring=metricas_cv,
+            return_train_score=True,
+            n_jobs=1,
+            error_score="raise",
+        )
+
+    resultados_svm_cv[identificador] = resultados
+
+    # Uma linha para cada divisão da validação cruzada.
+    linhas_divisoes_svm = []
+
+    for numero, (
+        posicoes_treino,
+        posicoes_validacao,
+    ) in enumerate(divisoes_cv, start=1):
+        indice_resultado = numero - 1
+
+        linha = {
+            "Divisão": numero,
+            "Registros de treino": len(posicoes_treino),
+            "Registros de validação": len(posicoes_validacao),
+            "Tempo de ajuste (s)": resultados[
+                "fit_time"
+            ][indice_resultado],
+            "Tempo de avaliação (s)": resultados[
+                "score_time"
+            ][indice_resultado],
+        }
+
+        for nome_metrica in metricas_cv:
+            linha[f"Treino - {nome_metrica}"] = (
+                resultados[f"train_{nome_metrica}"][
+                    indice_resultado
+                ]
+            )
+
+            linha[f"Validação - {nome_metrica}"] = (
+                resultados[f"test_{nome_metrica}"][
+                    indice_resultado
+                ]
+            )
+
+        linhas_divisoes_svm.append(linha)
+
+    tabela_divisoes_svm = pd.DataFrame(linhas_divisoes_svm)
+
+    # Resumo das métricas entre as cinco divisões.
+    linhas_resumo_svm = []
+
+    for nome_metrica in metricas_cv:
+        valores_treino = resultados[
+            f"train_{nome_metrica}"
+        ]
+
+        valores_validacao = resultados[
+            f"test_{nome_metrica}"
+        ]
+
+        linhas_resumo_svm.append({
+            "Modelo": nome_modelo,
+            "Métrica": nome_metrica,
+            "Média no treino": np.mean(valores_treino),
+            "Desvio padrão no treino": np.std(
+                valores_treino,
+                ddof=1,
+            ),
+            "Média na validação": np.mean(valores_validacao),
+            "Desvio padrão na validação": np.std(
+                valores_validacao,
+                ddof=1,
+            ),
+            "Diferença treino - validação": (
+                np.mean(valores_treino)
+                - np.mean(valores_validacao)
+            ),
+        })
+
+    tabela_resumo_svm = pd.DataFrame(linhas_resumo_svm)
+
+    tabela_tempos_svm = pd.DataFrame([{
+        "Modelo": nome_modelo,
+        "Divisões": len(divisoes_cv),
+        "Tempo médio de ajuste (s)": np.mean(
+            resultados["fit_time"]
+        ),
+        "Tempo médio de avaliação (s)": np.mean(
+            resultados["score_time"]
+        ),
+    }])
+
+    tabelas_svm_divisoes[identificador] = tabela_divisoes_svm
+    tabelas_svm_resumo[identificador] = tabela_resumo_svm
+    tabelas_svm_tempos[identificador] = tabela_tempos_svm
+
+    print("\nResultados por divisão:")
+    print(
+        tabela_divisoes_svm.round(4).to_string(index=False)
+    )
+
+    print("\nResumo das métricas:")
+    print(
+        tabela_resumo_svm.round(4).to_string(index=False)
+    )
+
+    print("\nTempos médios:")
+    print(
+        tabela_tempos_svm.round(6).to_string(index=False)
+    )
+
+    prefixo_svm = f"svm_{identificador}_inicial"
+
+    for tabela, sufixo in [
+        (tabela_divisoes_svm, "divisoes"),
+        (tabela_resumo_svm, "resumo"),
+        (tabela_tempos_svm, "tempos"),
+    ]:
+        caminho_svm = (
+            PASTA_RESULTADOS
+            / f"{prefixo_svm}_validacao_cruzada_{sufixo}.csv"
+        )
+
+        tabela.to_csv(
+            caminho_svm,
+            index=False,
+            sep=";",
+            encoding="utf-8-sig",
+            decimal=",",
+            float_format="%.6f",
+        )
+
+        print("\nTabela salva em:", caminho_svm)
+
+# Nomes explícitos, seguindo o padrão dos blocos anteriores.
+resultados_svm_linear_cv = resultados_svm_cv["linear"]
+resultados_svm_rbf_cv = resultados_svm_cv["rbf"]
+
+tabela_svm_linear_divisoes = tabelas_svm_divisoes["linear"]
+tabela_svm_rbf_divisoes = tabelas_svm_divisoes["rbf"]
+
+tabela_svm_linear_resumo = tabelas_svm_resumo["linear"]
+tabela_svm_rbf_resumo = tabelas_svm_resumo["rbf"]
+
+tabela_svm_linear_tempos = tabelas_svm_tempos["linear"]
+tabela_svm_rbf_tempos = tabelas_svm_tempos["rbf"]
+
+# Compara as médias de validação de todos os modelos já avaliados.
+comparacao_inicial_svm = (
+    tabela_dummy_resumo[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Dummy",
+    })
+)
+
+for nome_modelo, tabela_modelo in [
+    ("Regressão Logística", tabela_logistica_resumo),
+    ("KNN", tabela_knn_resumo),
+    ("Árvore de Decisão", tabela_arvore_resumo),
+    ("Random Forest", tabela_forest_resumo),
+    ("SVM linear", tabela_svm_linear_resumo),
+    ("SVM RBF", tabela_svm_rbf_resumo),
+]:
+    comparacao_inicial_svm = comparacao_inicial_svm.merge(
+        tabela_modelo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": nome_modelo,
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+
+print("\n" + "=" * 70)
+print("COMPARAÇÃO DOS MODELOS INICIAIS ATÉ SVM")
+print("=" * 70)
+
+print(
+    comparacao_inicial_svm.round(4).to_string(index=False)
+)
+
+arquivo_comparacao_svm = (
+    PASTA_RESULTADOS
+    / "comparacao_modelos_iniciais_ate_svm.csv"
+)
+
+comparacao_inicial_svm.to_csv(
+    arquivo_comparacao_svm,
+    index=False,
+    sep=";",
+    encoding="utf-8-sig",
+    decimal=",",
+    float_format="%.6f",
+)
+
+print("\nComparação salva em:", arquivo_comparacao_svm)
+
+print(
+    "\nAs métricas estão na escala de 0 a 1."
+)
+print(
+    "A média macro atribui o mesmo peso às três classes."
+)
+print(
+    "A diferença entre treino e validação deve ser interpretada "
+    "junto com o desempenho e a variação entre as divisões."
+)
+print(
+    "O tempo de ajuste inclui pré-processamento e classificador."
+)
+print(
+    "O tempo de avaliação inclui transformação, previsões "
+    "e cálculo das métricas."
+)
+print(
+    "Estas são configurações iniciais. O ajuste de "
+    "hiperparâmetros será realizado posteriormente no treino."
+)
+print(
+    "As médias, isoladamente, não demonstram "
+    "significância estatística entre os modelos."
+)
+print(
+    "pipeline_svm_linear e pipeline_svm_rbf permanecem "
+    "sem ajuste; o cross_validate treinou cópias independentes."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 16 concluído.")
+
+# %% ==========================================================
+# BLOCO 17 — Naive Bayes inicial
+# =============================================================
+
+from sklearn.naive_bayes import GaussianNB
+
+print("\n" + "=" * 70)
+print("BLOCO 17 — NAIVE BAYES INICIAL")
+print("=" * 70)
+
+# Configuração inicial, sem busca de hiperparâmetros.
+# priors=None: aprende as proporções das classes no treino.
+# var_smoothing: acrescenta uma parcela à variância para
+# melhorar a estabilidade numérica dos cálculos.
+classificador_nb = GaussianNB(
+    priors=None,
+    var_smoothing=1e-9,
+)
+
+pipeline_nb = criar_pipeline(classificador_nb)
+
+print("\nModelo: Gaussian Naive Bayes")
+print("Probabilidades iniciais das classes: aprendidas no treino")
+print("Var smoothing: 1e-9")
+print("Divisões da validação cruzada:", len(divisoes_cv))
+print("Registros disponíveis:", len(X_treino))
+
+print(
+    "\nO pré-processamento será ajustado dentro de cada divisão."
+)
+print(
+    "Serão usadas as mesmas divisões e métricas "
+    "dos classificadores anteriores."
+)
+print(
+    "O Pipeline existente produz uma matriz densa, "
+    "compatível com GaussianNB."
+)
+print(
+    "A hipótese gaussiana é uma aproximação, especialmente "
+    "para indicadores binários e categorias codificadas."
+)
+print(
+    "\nExecutando validação cruzada. Aguarde a conclusão..."
+)
+
+resultados_nb_cv = cross_validate(
+    estimator=pipeline_nb,
+    X=X_treino,
+    y=y_treino,
+    cv=divisoes_cv,
+    scoring=metricas_cv,
+    return_train_score=True,
+    n_jobs=1,
+    error_score="raise",
+)
+
+# Uma linha para cada divisão da validação cruzada.
+linhas_nb_cv = []
+
+for numero, (posicoes_treino, posicoes_validacao) in enumerate(
+    divisoes_cv,
+    start=1,
+):
+    indice_resultado = numero - 1
+
+    linha = {
+        "Divisão": numero,
+        "Registros de treino": len(posicoes_treino),
+        "Registros de validação": len(posicoes_validacao),
+        "Tempo de ajuste (s)": resultados_nb_cv[
+            "fit_time"
+        ][indice_resultado],
+        "Tempo de avaliação (s)": resultados_nb_cv[
+            "score_time"
+        ][indice_resultado],
+    }
+
+    for nome_metrica in metricas_cv:
+        linha[f"Treino - {nome_metrica}"] = (
+            resultados_nb_cv[f"train_{nome_metrica}"][
+                indice_resultado
+            ]
+        )
+
+        linha[f"Validação - {nome_metrica}"] = (
+            resultados_nb_cv[f"test_{nome_metrica}"][
+                indice_resultado
+            ]
+        )
+
+    linhas_nb_cv.append(linha)
+
+tabela_nb_divisoes = pd.DataFrame(linhas_nb_cv)
+
+# Resumo das métricas entre as cinco divisões.
+linhas_resumo_nb = []
+
+for nome_metrica in metricas_cv:
+    valores_treino = resultados_nb_cv[
+        f"train_{nome_metrica}"
+    ]
+
+    valores_validacao = resultados_nb_cv[
+        f"test_{nome_metrica}"
+    ]
+
+    linhas_resumo_nb.append({
+        "Modelo": "Gaussian Naive Bayes — inicial",
+        "Métrica": nome_metrica,
+        "Média no treino": np.mean(valores_treino),
+        "Desvio padrão no treino": np.std(
+            valores_treino,
+            ddof=1,
+        ),
+        "Média na validação": np.mean(valores_validacao),
+        "Desvio padrão na validação": np.std(
+            valores_validacao,
+            ddof=1,
+        ),
+        "Diferença treino - validação": (
+            np.mean(valores_treino)
+            - np.mean(valores_validacao)
+        ),
+    })
+
+tabela_nb_resumo = pd.DataFrame(linhas_resumo_nb)
+
+tabela_nb_tempos = pd.DataFrame([{
+    "Modelo": "Gaussian Naive Bayes — inicial",
+    "Divisões": len(divisoes_cv),
+    "Tempo médio de ajuste (s)": np.mean(
+        resultados_nb_cv["fit_time"]
+    ),
+    "Tempo médio de avaliação (s)": np.mean(
+        resultados_nb_cv["score_time"]
+    ),
+}])
+
+# Comparação das médias de validação de todos os modelos iniciais.
+comparacao_inicial_nb = (
+    tabela_dummy_resumo[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Dummy",
+    })
+)
+
+for nome_modelo, tabela_modelo in [
+    ("Regressão Logística", tabela_logistica_resumo),
+    ("KNN", tabela_knn_resumo),
+    ("Árvore de Decisão", tabela_arvore_resumo),
+    ("Random Forest", tabela_forest_resumo),
+    ("SVM linear", tabela_svm_linear_resumo),
+    ("SVM RBF", tabela_svm_rbf_resumo),
+    ("Gaussian Naive Bayes", tabela_nb_resumo),
+]:
+    comparacao_inicial_nb = comparacao_inicial_nb.merge(
+        tabela_modelo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": nome_modelo,
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+
+print("\nResultados por divisão:")
+print(
+    tabela_nb_divisoes.round(4).to_string(index=False)
+)
+
+print("\nResumo das métricas:")
+print(
+    tabela_nb_resumo.round(4).to_string(index=False)
+)
+
+print("\nTempos médios:")
+print(
+    tabela_nb_tempos.round(6).to_string(index=False)
+)
+
+print("\n" + "=" * 70)
+print("COMPARAÇÃO DOS MODELOS INICIAIS ATÉ NAIVE BAYES")
+print("=" * 70)
+
+print(
+    comparacao_inicial_nb.round(4).to_string(index=False)
+)
+
+arquivo_nb_divisoes = (
+    PASTA_RESULTADOS
+    / "nb_inicial_validacao_cruzada_divisoes.csv"
+)
+
+arquivo_nb_resumo = (
+    PASTA_RESULTADOS
+    / "nb_inicial_validacao_cruzada_resumo.csv"
+)
+
+arquivo_nb_tempos = (
+    PASTA_RESULTADOS
+    / "nb_inicial_validacao_cruzada_tempos.csv"
+)
+
+arquivo_comparacao_nb = (
+    PASTA_RESULTADOS
+    / "comparacao_modelos_iniciais_ate_nb.csv"
+)
+
+for tabela, caminho in [
+    (tabela_nb_divisoes, arquivo_nb_divisoes),
+    (tabela_nb_resumo, arquivo_nb_resumo),
+    (tabela_nb_tempos, arquivo_nb_tempos),
+    (comparacao_inicial_nb, arquivo_comparacao_nb),
+]:
+    tabela.to_csv(
+        caminho,
+        index=False,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        float_format="%.6f",
+    )
+
+    print("\nTabela salva em:", caminho)
+
+print(
+    "\nAs métricas estão na escala de 0 a 1."
+)
+print(
+    "A média macro atribui o mesmo peso às três classes."
+)
+print(
+    "Naive Bayes pressupõe independência condicional "
+    "das entradas dada a classe."
+)
+print(
+    "As correlações observadas e as dependências entre "
+    "categorias codificadas limitam essa hipótese."
+)
+print(
+    "Categorias raras podem produzir variâncias muito pequenas. "
+    "O var_smoothing será avaliado no ajuste de hiperparâmetros."
+)
+print(
+    "Um resultado baixo nesta configuração não permite "
+    "concluir que toda a família Naive Bayes é inadequada."
+)
+print(
+    "O tempo de ajuste inclui pré-processamento e classificador."
+)
+print(
+    "O tempo de avaliação inclui transformação, previsões "
+    "e cálculo das métricas."
+)
+print(
+    "Esta configuração é inicial. Ainda não foi escolhido "
+    "um modelo vencedor."
+)
+print(
+    "pipeline_nb permanece sem ajuste; "
+    "o cross_validate treinou cópias independentes."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 17 concluído.")
+
+# %% ==========================================================
+# BLOCO 18 — Consolidação da comparação inicial
+# =============================================================
+
+print("\n" + "=" * 70)
+print("BLOCO 18 — CONSOLIDAÇÃO DA COMPARAÇÃO INICIAL")
+print("=" * 70)
+
+METRICA_PRINCIPAL = "f1_macro"
+
+print("\nMétrica principal para orientar os ajustes:", METRICA_PRINCIPAL)
+print("Justificativa: atribuir o mesmo peso às três classes.")
+print("As demais métricas também serão consideradas.")
+print("Nenhum modelo será treinado novamente neste bloco.")
+
+# Tabelas produzidas nos blocos anteriores.
+modelos_para_consolidar = [
+    (
+        "Dummy",
+        tabela_dummy_resumo,
+        tabela_dummy_tempos,
+    ),
+    (
+        "Regressão Logística",
+        tabela_logistica_resumo,
+        tabela_logistica_tempos,
+    ),
+    (
+        "KNN",
+        tabela_knn_resumo,
+        tabela_knn_tempos,
+    ),
+    (
+        "Árvore de Decisão",
+        tabela_arvore_resumo,
+        tabela_arvore_tempos,
+    ),
+    (
+        "Random Forest",
+        tabela_forest_resumo,
+        tabela_forest_tempos,
+    ),
+    (
+        "SVM linear",
+        tabela_svm_linear_resumo,
+        tabela_svm_linear_tempos,
+    ),
+    (
+        "SVM RBF",
+        tabela_svm_rbf_resumo,
+        tabela_svm_rbf_tempos,
+    ),
+    (
+        "Gaussian Naive Bayes",
+        tabela_nb_resumo,
+        tabela_nb_tempos,
+    ),
+]
+
+linhas_comparacao_inicial = []
+
+for nome_modelo, tabela_resumo, tabela_tempos in modelos_para_consolidar:
+    if tabela_resumo["Métrica"].duplicated().any():
+        raise ValueError(
+            f"Existem métricas repetidas no resumo de {nome_modelo}."
+        )
+
+    resumo_por_metrica = tabela_resumo.set_index("Métrica")
+
+    metricas_faltantes = (
+        set(metricas_cv) - set(resumo_por_metrica.index)
+    )
+
+    if metricas_faltantes:
+        raise ValueError(
+            f"Métricas ausentes em {nome_modelo}: "
+            f"{sorted(metricas_faltantes)}"
+        )
+
+    if len(tabela_tempos) != 1:
+        raise ValueError(
+            f"A tabela de tempos de {nome_modelo} "
+            "precisa conter exatamente uma linha."
+        )
+
+    if int(tabela_tempos.iloc[0]["Divisões"]) != len(divisoes_cv):
+        raise ValueError(
+            f"A quantidade de divisões de {nome_modelo} "
+            "difere da configuração atual."
+        )
+
+    linha_f1 = resumo_por_metrica.loc[METRICA_PRINCIPAL]
+    linha_tempo = tabela_tempos.iloc[0]
+
+    linha_comparacao = {
+        "Modelo": nome_modelo,
+        "Acurácia na validação": resumo_por_metrica.loc[
+            "acuracia", "Média na validação"
+        ],
+        "Precisão macro na validação": resumo_por_metrica.loc[
+            "precisao_macro", "Média na validação"
+        ],
+        "Recall macro na validação": resumo_por_metrica.loc[
+            "recall_macro", "Média na validação"
+        ],
+        "F1 macro na validação": linha_f1["Média na validação"],
+        "DP do F1 macro na validação": linha_f1[
+            "Desvio padrão na validação"
+        ],
+        "F1 macro no treino": linha_f1["Média no treino"],
+        "Diferença F1 treino - validação (pp)": (
+            linha_f1["Média no treino"]
+            - linha_f1["Média na validação"]
+        ) * 100,
+        "Tempo médio de ajuste (s)": linha_tempo[
+            "Tempo médio de ajuste (s)"
+        ],
+        "Tempo médio de avaliação (s)": linha_tempo[
+            "Tempo médio de avaliação (s)"
+        ],
+    }
+
+    linhas_comparacao_inicial.append(linha_comparacao)
+
+comparacao_inicial_consolidada = pd.DataFrame(
+    linhas_comparacao_inicial
+)
+
+# Confere se as métricas e os tempos são números finitos.
+colunas_numericas_comparacao = (
+    comparacao_inicial_consolidada.columns.drop("Modelo")
+)
+
+if not np.isfinite(
+    comparacao_inicial_consolidada[
+        colunas_numericas_comparacao
+    ].to_numpy(dtype=float)
+).all():
+    raise ValueError(
+        "A comparação contém valores ausentes ou não finitos."
+    )
+
+# Ordenação descritiva pelas médias, sem declarar vencedor final.
+comparacao_inicial_consolidada = (
+    comparacao_inicial_consolidada
+    .sort_values(
+        by="F1 macro na validação",
+        ascending=False,
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+f1_dummy_inicial = comparacao_inicial_consolidada.loc[
+    comparacao_inicial_consolidada["Modelo"].eq("Dummy"),
+    "F1 macro na validação",
+].iloc[0]
+
+comparacao_inicial_consolidada[
+    "Diferença F1 para Dummy (pp)"
+] = (
+    comparacao_inicial_consolidada["F1 macro na validação"]
+    - f1_dummy_inicial
+) * 100
+
+print("\nComparação ordenada pelo F1 macro médio na validação:")
+print(
+    comparacao_inicial_consolidada.round(4).to_string(
+        index=False
+    )
+)
+
+arquivo_comparacao_consolidada = (
+    PASTA_RESULTADOS
+    / "comparacao_modelos_iniciais_consolidada.csv"
+)
+
+comparacao_inicial_consolidada.to_csv(
+    arquivo_comparacao_consolidada,
+    index=False,
+    sep=";",
+    encoding="utf-8-sig",
+    decimal=",",
+    float_format="%.6f",
+)
+
+print("\nTabela salva em:", arquivo_comparacao_consolidada)
+
+# Gráfico: maior F1 macro aparece no topo.
+dados_grafico_comparacao = (
+    comparacao_inicial_consolidada
+    .sort_values(
+        by="F1 macro na validação",
+        ascending=True,
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+posicoes_modelos = np.arange(len(dados_grafico_comparacao))
+
+f1_validacao_percentual = (
+    dados_grafico_comparacao["F1 macro na validação"]
+    .to_numpy() * 100
+)
+
+dp_validacao_percentual = (
+    dados_grafico_comparacao["DP do F1 macro na validação"]
+    .to_numpy() * 100
+)
+
+f1_treino_percentual = (
+    dados_grafico_comparacao["F1 macro no treino"]
+    .to_numpy() * 100
+)
+
+cores_comparacao = [
+    "#999999" if modelo == "Dummy" else "#4472C4"
+    for modelo in dados_grafico_comparacao["Modelo"]
+]
+
+fig_comparacao_inicial = plt.figure(
+    figsize=(12, 8),
+    layout="constrained",
+)
+
+fig_comparacao_inicial.canvas.manager.set_window_title(
+    "Figura 4 — Comparação inicial dos classificadores"
+)
+
+grade_comparacao = fig_comparacao_inicial.add_gridspec(
+    nrows=2,
+    ncols=1,
+    height_ratios=[1, 0.17],
+)
+
+ax_comparacao = fig_comparacao_inicial.add_subplot(
+    grade_comparacao[0, 0]
+)
+
+ax_comparacao.barh(
+    posicoes_modelos,
+    f1_validacao_percentual,
+    xerr=dp_validacao_percentual,
+    color=cores_comparacao,
+    height=0.6,
+    alpha=0.9,
+    capsize=4,
+    error_kw={
+        "ecolor": "#222222",
+        "elinewidth": 1.2,
+    },
+    label="Validação: média ± 1 desvio padrão",
+)
+
+ax_comparacao.scatter(
+    f1_treino_percentual,
+    posicoes_modelos,
+    color="#C44E52",
+    marker="D",
+    s=45,
+    zorder=3,
+    label="Treino: média",
+)
+
+for posicao, media, desvio in zip(
+    posicoes_modelos,
+    f1_validacao_percentual,
+    dp_validacao_percentual,
+):
+    ax_comparacao.text(
+        media + desvio + 1.0,
+        posicao,
+        f"{media:.2f}%".replace(".", ","),
+        va="center",
+        fontsize=9,
+    )
+
+ax_comparacao.set_yticks(posicoes_modelos)
+ax_comparacao.set_yticklabels(
+    dados_grafico_comparacao["Modelo"]
+)
+
+ax_comparacao.set_xlim(0, 105)
+ax_comparacao.set_xticks(np.arange(0, 101, 10))
+ax_comparacao.set_xlabel("F1 macro (%)")
+ax_comparacao.set_title(
+    "Comparação inicial dos classificadores\n"
+    "Validação cruzada estratificada com cinco divisões",
+    fontsize=14,
+    pad=14,
+)
+
+ax_comparacao.grid(axis="x", alpha=0.25)
+ax_comparacao.set_axisbelow(True)
+ax_comparacao.spines["top"].set_visible(False)
+ax_comparacao.spines["right"].set_visible(False)
+ax_comparacao.legend(
+    loc="lower right",
+    fontsize=8,
+)
+
+# Rodapé em área própria para evitar sobreposição.
+ax_rodape_comparacao = fig_comparacao_inicial.add_subplot(
+    grade_comparacao[1, 0]
+)
+ax_rodape_comparacao.set_axis_off()
+
+ax_rodape_comparacao.text(
+    0.5,
+    0.5,
+    "Fonte: resultados dos Blocos 11 a 17 — elaboração do grupo.\n"
+    "Mesmas divisões do treino para todos os modelos. "
+    "Teste reservado não utilizado.\n"
+    "Barras de erro mostram a variação entre divisões; "
+    "não são intervalos de confiança.",
+    transform=ax_rodape_comparacao.transAxes,
+    ha="center",
+    va="center",
+    fontsize=9,
+)
+
+arquivo_figura_comparacao = (
+    PASTA_RESULTADOS
+    / "figura_04_comparacao_modelos_iniciais.png"
+)
+
+fig_comparacao_inicial.savefig(
+    arquivo_figura_comparacao,
+    dpi=300,
+    bbox_inches="tight",
+)
+
+print("\nFigura salva em:", arquivo_figura_comparacao)
+
+print(
+    "\nAs métricas da tabela estão na escala de 0 a 1."
+)
+print(
+    "No gráfico, o F1 macro está expresso em percentual."
+)
+print(
+    "As diferenças identificadas por 'pp' "
+    "estão em pontos percentuais."
+)
+print(
+    "Os tempos correspondem às execuções desta sessão "
+    "e podem variar entre execuções."
+)
+print(
+    "Uma diferença pequena entre treino e validação "
+    "não garante bom desempenho: considere também o F1 obtido."
+)
+print(
+    "O F1 no treino do KNN inclui a possibilidade "
+    "de cada registro ser seu próprio vizinho."
+)
+print(
+    "A ordenação das médias não comprova "
+    "superioridade estatística entre os modelos."
+)
+print(
+    "Esta comparação reúne configurações iniciais. "
+    "O próximo estágio será o ajuste de hiperparâmetros "
+    "usando somente os dados de treino."
+)
+
+print("\nNenhum modelo foi treinado novamente neste bloco.")
+print("O conjunto de teste reservado não foi utilizado.")
+print("\nFeche a Figura 4 para concluir o Bloco 18.")
+
+plt.show()
+plt.close(fig_comparacao_inicial)
+
+print("\nBloco 18 concluído.")
+
+# %% ==========================================================
+# BLOCO 19 — Ajuste da Regressão Logística
+# =============================================================
+
+from time import perf_counter
+
+from sklearn.model_selection import GridSearchCV, ParameterGrid
+
+print("\n" + "=" * 70)
+print("BLOCO 19 — AJUSTE DA REGRESSÃO LOGÍSTICA")
+print("=" * 70)
+
+# Mantém o solver e o limite de iterações do modelo inicial.
+# A busca altera somente C e class_weight.
+pipeline_logistica_busca = criar_pipeline(
+    LogisticRegression(
+        solver="lbfgs",
+        max_iter=3000,
+        random_state=SEMENTE_ALEATORIA,
+    )
+)
+
+grade_logistica = {
+    "modelo__C": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0,
+        1000.0,
+    ],
+    "modelo__class_weight": [
+        None,
+        "balanced",
+    ],
+}
+
+numero_configuracoes_logistica = len(
+    list(ParameterGrid(grade_logistica))
+)
+
+print("\nModelo: Regressão Logística")
+print("Solver: lbfgs")
+print("Limite de iterações por ajuste: 3000")
+print("Valores de C:", grade_logistica["modelo__C"])
+print("Pesos das classes: None e balanced")
+print("Métrica de seleção:", METRICA_PRINCIPAL)
+print("Configurações:", numero_configuracoes_logistica)
+print("Divisões por configuração:", len(divisoes_cv))
+print(
+    "Ajustes na validação cruzada:",
+    numero_configuracoes_logistica * len(divisoes_cv),
+)
+print("Registros disponíveis:", len(X_treino))
+
+print(
+    "\nO pré-processamento será aprendido dentro "
+    "de cada divisão da validação cruzada."
+)
+print(
+    "A configuração inicial C=1.0 e class_weight=None "
+    "também está incluída na busca."
+)
+print(
+    "Após a seleção, o melhor Pipeline desta grade "
+    "será ajustado em todo o conjunto de treino."
+)
+print(
+    "\nIniciando busca. Aguarde; ela executa vários ajustes..."
+)
+
+busca_logistica = GridSearchCV(
+    estimator=pipeline_logistica_busca,
+    param_grid=grade_logistica,
+    scoring=metricas_cv,
+    refit=METRICA_PRINCIPAL,
+    cv=divisoes_cv,
+    return_train_score=True,
+    n_jobs=1,
+    verbose=1,
+    error_score="raise",
+)
+
+inicio_busca_logistica = perf_counter()
+
+# Interrompe a execução se algum ajuste não convergir.
+with warnings.catch_warnings():
+    warnings.simplefilter("error", ConvergenceWarning)
+
+    busca_logistica.fit(
+        X_treino,
+        y_treino,
+    )
+
+tempo_total_busca_logistica = (
+    perf_counter() - inicio_busca_logistica
+)
+
+# Este Pipeline já foi ajustado nos 3.096 registros de treino.
+# Ainda não é a escolha final entre todas as famílias.
+melhor_pipeline_logistica = busca_logistica.best_estimator_
+
+indice_melhor_logistica = busca_logistica.best_index_
+resultados_grade_logistica = busca_logistica.cv_results_
+
+print("\nBusca concluída.")
+print("Parâmetros selecionados:", busca_logistica.best_params_)
+print(
+    "F1 macro médio na validação:",
+    f"{busca_logistica.best_score_:.4f}",
+)
+print(
+    "Tempo total da busca, incluindo ajuste final:",
+    f"{tempo_total_busca_logistica:.2f} s",
+)
+print(
+    "Tempo do ajuste final em todo o treino:",
+    f"{busca_logistica.refit_time_:.2f} s",
+)
+
+# Preserva todos os resultados retornados pelo GridSearchCV.
+# As chaves test_* representam validação interna do treino.
+tabela_logistica_busca_completa = pd.DataFrame(
+    resultados_grade_logistica
+)
+
+# Tabela legível com uma linha por configuração.
+linhas_grade_logistica = []
+
+for indice, parametros in enumerate(
+    resultados_grade_logistica["params"]
+):
+    linha = {
+        "C": parametros["modelo__C"],
+        "Peso das classes": (
+            "Sem ponderação"
+            if parametros["modelo__class_weight"] is None
+            else "balanced"
+        ),
+        "Posição por F1 macro": int(
+            resultados_grade_logistica[
+                "rank_test_f1_macro"
+            ][indice]
+        ),
+        "Selecionada": indice == indice_melhor_logistica,
+        "Tempo médio de ajuste (s)": (
+            resultados_grade_logistica["mean_fit_time"][indice]
+        ),
+        "Tempo médio de avaliação (s)": (
+            resultados_grade_logistica["mean_score_time"][indice]
+        ),
+    }
+
+    for nome_metrica in metricas_cv:
+        valores_treino = np.array([
+            resultados_grade_logistica[
+                f"split{divisao}_train_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        valores_validacao = np.array([
+            resultados_grade_logistica[
+                f"split{divisao}_test_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        linha[f"Treino - {nome_metrica}"] = np.mean(
+            valores_treino
+        )
+        linha[f"Validação - {nome_metrica}"] = np.mean(
+            valores_validacao
+        )
+        linha[f"DP validação - {nome_metrica}"] = np.std(
+            valores_validacao,
+            ddof=1,
+        )
+
+    linha["Diferença F1 treino - validação (pp)"] = (
+        linha["Treino - f1_macro"]
+        - linha["Validação - f1_macro"]
+    ) * 100
+
+    linhas_grade_logistica.append(linha)
+
+tabela_logistica_grade = (
+    pd.DataFrame(linhas_grade_logistica)
+    .sort_values(
+        by="Posição por F1 macro",
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+# Resumo da configuração selecionada.
+# Mantém o padrão dos blocos anteriores e usa ddof=1.
+linhas_logistica_ajustada_resumo = []
+
+for nome_metrica in metricas_cv:
+    valores_treino = np.array([
+        resultados_grade_logistica[
+            f"split{divisao}_train_{nome_metrica}"
+        ][indice_melhor_logistica]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    valores_validacao = np.array([
+        resultados_grade_logistica[
+            f"split{divisao}_test_{nome_metrica}"
+        ][indice_melhor_logistica]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    linhas_logistica_ajustada_resumo.append({
+        "Modelo": "Regressão Logística — ajustada",
+        "Métrica": nome_metrica,
+        "Média no treino": np.mean(valores_treino),
+        "Desvio padrão no treino": np.std(
+            valores_treino,
+            ddof=1,
+        ),
+        "Média na validação": np.mean(valores_validacao),
+        "Desvio padrão na validação": np.std(
+            valores_validacao,
+            ddof=1,
+        ),
+        "Diferença treino - validação": (
+            np.mean(valores_treino)
+            - np.mean(valores_validacao)
+        ),
+    })
+
+tabela_logistica_ajustada_resumo = pd.DataFrame(
+    linhas_logistica_ajustada_resumo
+)
+
+# Comparação descritiva com a configuração inicial.
+comparacao_logistica_ajuste = (
+    tabela_logistica_resumo[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Inicial - validação",
+    })
+    .merge(
+        tabela_logistica_ajustada_resumo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": "Selecionada - validação",
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+)
+
+comparacao_logistica_ajuste[
+    "Diferença selecionada - inicial (pp)"
+] = (
+    comparacao_logistica_ajuste["Selecionada - validação"]
+    - comparacao_logistica_ajuste["Inicial - validação"]
+) * 100
+
+# Documenta os parâmetros e os diferentes tempos.
+tabela_logistica_ajustada_tempos = pd.DataFrame([{
+    "Modelo": "Regressão Logística — ajustada",
+    "C selecionado": busca_logistica.best_params_["modelo__C"],
+    "Peso das classes": (
+        "Sem ponderação"
+        if busca_logistica.best_params_[
+            "modelo__class_weight"
+        ] is None
+        else "balanced"
+    ),
+    "Métrica de seleção": METRICA_PRINCIPAL,
+    "Configurações": numero_configuracoes_logistica,
+    "Divisões": len(divisoes_cv),
+    "Tempo médio de ajuste (s)": resultados_grade_logistica[
+        "mean_fit_time"
+    ][indice_melhor_logistica],
+    "Tempo médio de avaliação (s)": resultados_grade_logistica[
+        "mean_score_time"
+    ][indice_melhor_logistica],
+    "Tempo do ajuste final no treino (s)": (
+        busca_logistica.refit_time_
+    ),
+    "Tempo total da busca com ajuste final (s)": (
+        tempo_total_busca_logistica
+    ),
+}])
+
+print("\nConfigurações ordenadas pelo F1 macro:")
+print(
+    tabela_logistica_grade.round(4).to_string(index=False)
+)
+
+print("\nResumo da configuração selecionada:")
+print(
+    tabela_logistica_ajustada_resumo.round(4).to_string(
+        index=False
+    )
+)
+
+print("\nComparação com a configuração inicial:")
+print(
+    comparacao_logistica_ajuste.round(4).to_string(
+        index=False
+    )
+)
+
+print("\nParâmetros e tempos:")
+print(
+    tabela_logistica_ajustada_tempos.round(6).to_string(
+        index=False
+    )
+)
+
+# Salva as tabelas sem sobrescrever os resultados iniciais.
+for tabela, nome_arquivo in [
+    (
+        tabela_logistica_busca_completa,
+        "logistica_ajuste_busca_completa.csv",
+    ),
+    (
+        tabela_logistica_grade,
+        "logistica_ajuste_configuracoes.csv",
+    ),
+    (
+        tabela_logistica_ajustada_resumo,
+        "logistica_ajustada_validacao_cruzada_resumo.csv",
+    ),
+    (
+        tabela_logistica_ajustada_tempos,
+        "logistica_ajustada_tempos_parametros.csv",
+    ),
+    (
+        comparacao_logistica_ajuste,
+        "comparacao_logistica_inicial_ajustada.csv",
+    ),
+]:
+    caminho = PASTA_RESULTADOS / nome_arquivo
+
+    tabela.to_csv(
+        caminho,
+        index=False,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        float_format="%.6f",
+    )
+
+    print("\nTabela salva em:", caminho)
+
+print(
+    "\nOs desvios padrão das tabelas resumidas usam ddof=1."
+)
+print(
+    "O arquivo busca_completa preserva o cv_results_ original, "
+    "cujos campos std_* usam a convenção do scikit-learn."
+)
+print(
+    "A melhor média foi selecionada nas mesmas divisões "
+    "usadas para comparar os parâmetros. Ela pode ser otimista "
+    "e não constitui uma avaliação independente."
+)
+print(
+    "A diferença em relação à configuração inicial "
+    "é descritiva; não comprova superioridade estatística."
+)
+print(
+    "melhor_pipeline_logistica está ajustado em todo o treino "
+    "e disponível na memória desta execução."
+)
+print(
+    "O modelo ainda não foi salvo em arquivo nem escolhido "
+    "como vencedor entre todas as famílias."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 19 concluído.")
+
+# %% ==========================================================
+# BLOCO 20 — Ajuste de hiperparâmetros do KNN
+# =============================================================
+
+print("\n" + "=" * 70)
+print("BLOCO 20 — AJUSTE DE HIPERPARÂMETROS DO KNN")
+print("=" * 70)
+
+# Mantém o mesmo pré-processamento e método de busca
+# de vizinhos usados na configuração inicial.
+pipeline_knn_busca = criar_pipeline(
+    KNeighborsClassifier(
+        metric="minkowski",
+        algorithm="brute",
+        n_jobs=1,
+    )
+)
+
+grade_knn = {
+    "modelo__n_neighbors": [3, 5, 9, 15, 25, 41],
+    "modelo__weights": ["uniform", "distance"],
+    "modelo__p": [1, 2],
+}
+
+numero_configuracoes_knn = len(
+    list(ParameterGrid(grade_knn))
+)
+
+# Confere se todos os valores de k cabem nas partes de treino.
+menor_treino_cv_knn = min(
+    len(posicoes_treino)
+    for posicoes_treino, _ in divisoes_cv
+)
+
+if max(grade_knn["modelo__n_neighbors"]) > menor_treino_cv_knn:
+    raise ValueError(
+        "Existe um número de vizinhos maior que a quantidade "
+        "de registros de treino disponível em uma divisão."
+    )
+
+print("\nModelo: KNN")
+print("Vizinhos:", grade_knn["modelo__n_neighbors"])
+print("Pesos:", grade_knn["modelo__weights"])
+print("Distâncias: Manhattan (p=1) e Euclidiana (p=2)")
+print("Métrica de seleção:", METRICA_PRINCIPAL)
+print("Configurações:", numero_configuracoes_knn)
+print("Divisões por configuração:", len(divisoes_cv))
+print(
+    "Ajustes na validação cruzada:",
+    numero_configuracoes_knn * len(divisoes_cv),
+)
+print("Registros disponíveis:", len(X_treino))
+
+print(
+    "\nA configuração inicial k=5, weights=uniform e p=2 "
+    "está incluída na busca."
+)
+print(
+    "O pré-processamento será aprendido dentro "
+    "de cada divisão da validação cruzada."
+)
+print(
+    "Após a seleção, o melhor Pipeline desta grade "
+    "será ajustado em todo o conjunto de treino."
+)
+print("\nIniciando busca. Aguarde a conclusão...")
+
+busca_knn = GridSearchCV(
+    estimator=pipeline_knn_busca,
+    param_grid=grade_knn,
+    scoring=metricas_cv,
+    refit=METRICA_PRINCIPAL,
+    cv=divisoes_cv,
+    return_train_score=True,
+    n_jobs=1,
+    verbose=1,
+    error_score="raise",
+)
+
+inicio_busca_knn = perf_counter()
+
+busca_knn.fit(
+    X_treino,
+    y_treino,
+)
+
+tempo_total_busca_knn = (
+    perf_counter() - inicio_busca_knn
+)
+
+# Pipeline ajustado em todo o treino, sem avaliação no teste.
+melhor_pipeline_knn = busca_knn.best_estimator_
+
+indice_melhor_knn = busca_knn.best_index_
+resultados_grade_knn = busca_knn.cv_results_
+
+print("\nBusca concluída.")
+print("Parâmetros selecionados:", busca_knn.best_params_)
+print(
+    "F1 macro médio na validação:",
+    f"{busca_knn.best_score_:.4f}",
+)
+print(
+    "Tempo total da busca, incluindo ajuste final:",
+    f"{tempo_total_busca_knn:.2f} s",
+)
+print(
+    "Tempo do ajuste final em todo o treino:",
+    f"{busca_knn.refit_time_:.2f} s",
+)
+
+# Preserva todos os resultados originais da busca.
+tabela_knn_busca_completa = pd.DataFrame(
+    resultados_grade_knn
+)
+
+# Uma linha por configuração.
+linhas_grade_knn = []
+
+for indice, parametros in enumerate(
+    resultados_grade_knn["params"]
+):
+    linha = {
+        "Vizinhos": parametros["modelo__n_neighbors"],
+        "Pesos": parametros["modelo__weights"],
+        "p": parametros["modelo__p"],
+        "Distância": (
+            "Manhattan"
+            if parametros["modelo__p"] == 1
+            else "Euclidiana"
+        ),
+        "Posição por F1 macro": int(
+            resultados_grade_knn["rank_test_f1_macro"][indice]
+        ),
+        "Selecionada": indice == indice_melhor_knn,
+        "Tempo médio de ajuste (s)": resultados_grade_knn[
+            "mean_fit_time"
+        ][indice],
+        "Tempo médio de avaliação (s)": resultados_grade_knn[
+            "mean_score_time"
+        ][indice],
+    }
+
+    for nome_metrica in metricas_cv:
+        valores_treino = np.array([
+            resultados_grade_knn[
+                f"split{divisao}_train_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        valores_validacao = np.array([
+            resultados_grade_knn[
+                f"split{divisao}_test_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        linha[f"Treino - {nome_metrica}"] = np.mean(
+            valores_treino
+        )
+        linha[f"Validação - {nome_metrica}"] = np.mean(
+            valores_validacao
+        )
+        linha[f"DP validação - {nome_metrica}"] = np.std(
+            valores_validacao,
+            ddof=1,
+        )
+
+    linha["Diferença F1 treino - validação (pp)"] = (
+        linha["Treino - f1_macro"]
+        - linha["Validação - f1_macro"]
+    ) * 100
+
+    linhas_grade_knn.append(linha)
+
+tabela_knn_grade = (
+    pd.DataFrame(linhas_grade_knn)
+    .sort_values(
+        by="Posição por F1 macro",
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+# Resumo da configuração selecionada.
+linhas_knn_ajustado_resumo = []
+
+for nome_metrica in metricas_cv:
+    valores_treino = np.array([
+        resultados_grade_knn[
+            f"split{divisao}_train_{nome_metrica}"
+        ][indice_melhor_knn]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    valores_validacao = np.array([
+        resultados_grade_knn[
+            f"split{divisao}_test_{nome_metrica}"
+        ][indice_melhor_knn]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    linhas_knn_ajustado_resumo.append({
+        "Modelo": "KNN — ajustado",
+        "Métrica": nome_metrica,
+        "Média no treino": np.mean(valores_treino),
+        "Desvio padrão no treino": np.std(
+            valores_treino,
+            ddof=1,
+        ),
+        "Média na validação": np.mean(valores_validacao),
+        "Desvio padrão na validação": np.std(
+            valores_validacao,
+            ddof=1,
+        ),
+        "Diferença treino - validação": (
+            np.mean(valores_treino)
+            - np.mean(valores_validacao)
+        ),
+    })
+
+tabela_knn_ajustado_resumo = pd.DataFrame(
+    linhas_knn_ajustado_resumo
+)
+
+# Comparação descritiva com o KNN inicial.
+comparacao_knn_ajuste = (
+    tabela_knn_resumo[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Inicial - validação",
+    })
+    .merge(
+        tabela_knn_ajustado_resumo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": "Selecionada - validação",
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+)
+
+comparacao_knn_ajuste[
+    "Diferença selecionada - inicial (pp)"
+] = (
+    comparacao_knn_ajuste["Selecionada - validação"]
+    - comparacao_knn_ajuste["Inicial - validação"]
+) * 100
+
+tabela_knn_ajustado_tempos = pd.DataFrame([{
+    "Modelo": "KNN — ajustado",
+    "Vizinhos selecionados": busca_knn.best_params_[
+        "modelo__n_neighbors"
+    ],
+    "Pesos selecionados": busca_knn.best_params_[
+        "modelo__weights"
+    ],
+    "p selecionado": busca_knn.best_params_["modelo__p"],
+    "Métrica de seleção": METRICA_PRINCIPAL,
+    "Configurações": numero_configuracoes_knn,
+    "Divisões": len(divisoes_cv),
+    "Tempo médio de ajuste (s)": resultados_grade_knn[
+        "mean_fit_time"
+    ][indice_melhor_knn],
+    "Tempo médio de avaliação (s)": resultados_grade_knn[
+        "mean_score_time"
+    ][indice_melhor_knn],
+    "Tempo do ajuste final no treino (s)": (
+        busca_knn.refit_time_
+    ),
+    "Tempo total da busca com ajuste final (s)": (
+        tempo_total_busca_knn
+    ),
+}])
+
+print("\nConfigurações ordenadas pelo F1 macro:")
+print(
+    tabela_knn_grade.round(4).to_string(index=False)
+)
+
+print("\nResumo da configuração selecionada:")
+print(
+    tabela_knn_ajustado_resumo.round(4).to_string(index=False)
+)
+
+print("\nComparação com a configuração inicial:")
+print(
+    comparacao_knn_ajuste.round(4).to_string(index=False)
+)
+
+print("\nParâmetros e tempos:")
+print(
+    tabela_knn_ajustado_tempos.round(6).to_string(index=False)
+)
+
+# Preserva os arquivos dos experimentos anteriores.
+for tabela, nome_arquivo in [
+    (
+        tabela_knn_busca_completa,
+        "knn_ajuste_busca_completa.csv",
+    ),
+    (
+        tabela_knn_grade,
+        "knn_ajuste_configuracoes.csv",
+    ),
+    (
+        tabela_knn_ajustado_resumo,
+        "knn_ajustado_validacao_cruzada_resumo.csv",
+    ),
+    (
+        tabela_knn_ajustado_tempos,
+        "knn_ajustado_tempos_parametros.csv",
+    ),
+    (
+        comparacao_knn_ajuste,
+        "comparacao_knn_inicial_ajustado.csv",
+    ),
+]:
+    caminho = PASTA_RESULTADOS / nome_arquivo
+
+    tabela.to_csv(
+        caminho,
+        index=False,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        float_format="%.6f",
+    )
+
+    print("\nTabela salva em:", caminho)
+
+print(
+    "\nOs desvios padrão das tabelas resumidas usam ddof=1."
+)
+print(
+    "O arquivo busca_completa preserva o cv_results_ original, "
+    "cujos campos std_* usam a convenção do scikit-learn."
+)
+print(
+    "Na avaliação do treino, cada registro pode ser "
+    "seu próprio vizinho. Com pesos por distância, isso "
+    "pode produzir pontuações muito altas no treino."
+)
+print(
+    "Por isso, a diferença treino - validação do KNN "
+    "deve ser interpretada considerando essa particularidade."
+)
+print(
+    "A seleção é feita pelo F1 macro na validação, "
+    "e não pela pontuação no treino."
+)
+print(
+    "A melhor média foi selecionada nas mesmas divisões "
+    "usadas para comparar os parâmetros. Ela pode ser otimista "
+    "e não constitui uma avaliação independente."
+)
+print(
+    "A diferença em relação à configuração inicial "
+    "é descritiva; não comprova superioridade estatística."
+)
+print(
+    "melhor_pipeline_knn está ajustado em todo o treino "
+    "e disponível na memória desta execução."
+)
+print(
+    "O modelo ainda não foi salvo em arquivo nem escolhido "
+    "como vencedor entre todas as famílias."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 20 concluído.")
+
+# %% ==========================================================
+# BLOCO 21 — Ajuste da Árvore de Decisão
+# =============================================================
+
+print("\n" + "=" * 70)
+print("BLOCO 21 — AJUSTE DA ÁRVORE DE DECISÃO")
+print("=" * 70)
+
+# Mantém o critério Gini e a semente do modelo inicial.
+# A busca avalia controles de complexidade e pesos das classes.
+pipeline_arvore_busca = criar_pipeline(
+    DecisionTreeClassifier(
+        criterion="gini",
+        min_samples_split=2,
+        random_state=SEMENTE_ALEATORIA,
+    )
+)
+
+grade_arvore = {
+    "modelo__max_depth": [3, 5, 10, None],
+    "modelo__min_samples_leaf": [1, 5, 15, 30],
+    "modelo__class_weight": [None, "balanced"],
+}
+
+numero_configuracoes_arvore = len(
+    list(ParameterGrid(grade_arvore))
+)
+
+print("\nModelo: Árvore de Decisão")
+print("Critério: Gini")
+print("Profundidades:", grade_arvore["modelo__max_depth"])
+print(
+    "Mínimo de registros por folha:",
+    grade_arvore["modelo__min_samples_leaf"],
+)
+print("Pesos das classes: None e balanced")
+print("Métrica de seleção:", METRICA_PRINCIPAL)
+print("Configurações:", numero_configuracoes_arvore)
+print("Divisões por configuração:", len(divisoes_cv))
+print(
+    "Ajustes na validação cruzada:",
+    numero_configuracoes_arvore * len(divisoes_cv),
+)
+print("Registros disponíveis:", len(X_treino))
+
+print(
+    "\nA configuração inicial, sem limite de profundidade, "
+    "com uma amostra mínima por folha e sem ponderação, "
+    "está incluída na busca."
+)
+print(
+    "O pré-processamento será aprendido dentro "
+    "de cada divisão da validação cruzada."
+)
+print(
+    "Manteremos o Pipeline comum dos experimentos anteriores."
+)
+print(
+    "Após a seleção, o melhor Pipeline desta grade "
+    "será ajustado em todo o conjunto de treino."
+)
+print("\nIniciando busca. Aguarde a conclusão...")
+
+busca_arvore = GridSearchCV(
+    estimator=pipeline_arvore_busca,
+    param_grid=grade_arvore,
+    scoring=metricas_cv,
+    refit=METRICA_PRINCIPAL,
+    cv=divisoes_cv,
+    return_train_score=True,
+    n_jobs=1,
+    verbose=1,
+    error_score="raise",
+)
+
+inicio_busca_arvore = perf_counter()
+
+busca_arvore.fit(
+    X_treino,
+    y_treino,
+)
+
+tempo_total_busca_arvore = (
+    perf_counter() - inicio_busca_arvore
+)
+
+# Pipeline selecionado e ajustado em todo o treino.
+melhor_pipeline_arvore = busca_arvore.best_estimator_
+
+indice_melhor_arvore = busca_arvore.best_index_
+resultados_grade_arvore = busca_arvore.cv_results_
+
+arvore_ajustada_treino = (
+    melhor_pipeline_arvore.named_steps["modelo"]
+)
+
+print("\nBusca concluída.")
+print("Parâmetros selecionados:", busca_arvore.best_params_)
+print(
+    "F1 macro médio na validação:",
+    f"{busca_arvore.best_score_:.4f}",
+)
+print(
+    "Profundidade da árvore ajustada em todo o treino:",
+    arvore_ajustada_treino.get_depth(),
+)
+print(
+    "Folhas da árvore ajustada em todo o treino:",
+    arvore_ajustada_treino.get_n_leaves(),
+)
+print(
+    "Tempo total da busca, incluindo ajuste final:",
+    f"{tempo_total_busca_arvore:.2f} s",
+)
+print(
+    "Tempo do ajuste final em todo o treino:",
+    f"{busca_arvore.refit_time_:.2f} s",
+)
+
+# Preserva todos os resultados originais da busca.
+tabela_arvore_busca_completa = pd.DataFrame(
+    resultados_grade_arvore
+)
+
+# Uma linha por configuração.
+linhas_grade_arvore = []
+
+for indice, parametros in enumerate(
+    resultados_grade_arvore["params"]
+):
+    profundidade = parametros["modelo__max_depth"]
+
+    linha = {
+        "Profundidade máxima": (
+            "Sem limite"
+            if profundidade is None
+            else str(profundidade)
+        ),
+        "Mínimo por folha": parametros[
+            "modelo__min_samples_leaf"
+        ],
+        "Peso das classes": (
+            "Sem ponderação"
+            if parametros["modelo__class_weight"] is None
+            else "balanced"
+        ),
+        "Posição por F1 macro": int(
+            resultados_grade_arvore[
+                "rank_test_f1_macro"
+            ][indice]
+        ),
+        "Selecionada": indice == indice_melhor_arvore,
+        "Tempo médio de ajuste (s)": resultados_grade_arvore[
+            "mean_fit_time"
+        ][indice],
+        "Tempo médio de avaliação (s)": resultados_grade_arvore[
+            "mean_score_time"
+        ][indice],
+    }
+
+    for nome_metrica in metricas_cv:
+        valores_treino = np.array([
+            resultados_grade_arvore[
+                f"split{divisao}_train_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        valores_validacao = np.array([
+            resultados_grade_arvore[
+                f"split{divisao}_test_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        linha[f"Treino - {nome_metrica}"] = np.mean(
+            valores_treino
+        )
+        linha[f"Validação - {nome_metrica}"] = np.mean(
+            valores_validacao
+        )
+        linha[f"DP validação - {nome_metrica}"] = np.std(
+            valores_validacao,
+            ddof=1,
+        )
+
+    linha["Diferença F1 treino - validação (pp)"] = (
+        linha["Treino - f1_macro"]
+        - linha["Validação - f1_macro"]
+    ) * 100
+
+    linhas_grade_arvore.append(linha)
+
+tabela_arvore_grade = (
+    pd.DataFrame(linhas_grade_arvore)
+    .sort_values(
+        by="Posição por F1 macro",
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+# Resumo da configuração selecionada.
+linhas_arvore_ajustada_resumo = []
+
+for nome_metrica in metricas_cv:
+    valores_treino = np.array([
+        resultados_grade_arvore[
+            f"split{divisao}_train_{nome_metrica}"
+        ][indice_melhor_arvore]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    valores_validacao = np.array([
+        resultados_grade_arvore[
+            f"split{divisao}_test_{nome_metrica}"
+        ][indice_melhor_arvore]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    linhas_arvore_ajustada_resumo.append({
+        "Modelo": "Árvore de Decisão — ajustada",
+        "Métrica": nome_metrica,
+        "Média no treino": np.mean(valores_treino),
+        "Desvio padrão no treino": np.std(
+            valores_treino,
+            ddof=1,
+        ),
+        "Média na validação": np.mean(valores_validacao),
+        "Desvio padrão na validação": np.std(
+            valores_validacao,
+            ddof=1,
+        ),
+        "Diferença treino - validação": (
+            np.mean(valores_treino)
+            - np.mean(valores_validacao)
+        ),
+    })
+
+tabela_arvore_ajustada_resumo = pd.DataFrame(
+    linhas_arvore_ajustada_resumo
+)
+
+# Comparação descritiva com a árvore inicial.
+comparacao_arvore_ajuste = (
+    tabela_arvore_resumo[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Inicial - validação",
+    })
+    .merge(
+        tabela_arvore_ajustada_resumo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": "Selecionada - validação",
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+)
+
+comparacao_arvore_ajuste[
+    "Diferença selecionada - inicial (pp)"
+] = (
+    comparacao_arvore_ajuste["Selecionada - validação"]
+    - comparacao_arvore_ajuste["Inicial - validação"]
+) * 100
+
+profundidade_selecionada_arvore = (
+    busca_arvore.best_params_["modelo__max_depth"]
+)
+
+tabela_arvore_ajustada_tempos = pd.DataFrame([{
+    "Modelo": "Árvore de Decisão — ajustada",
+    "Profundidade máxima selecionada": (
+        "Sem limite"
+        if profundidade_selecionada_arvore is None
+        else str(profundidade_selecionada_arvore)
+    ),
+    "Mínimo por folha selecionado": busca_arvore.best_params_[
+        "modelo__min_samples_leaf"
+    ],
+    "Peso das classes": (
+        "Sem ponderação"
+        if busca_arvore.best_params_[
+            "modelo__class_weight"
+        ] is None
+        else "balanced"
+    ),
+    "Profundidade no ajuste final": (
+        arvore_ajustada_treino.get_depth()
+    ),
+    "Folhas no ajuste final": (
+        arvore_ajustada_treino.get_n_leaves()
+    ),
+    "Métrica de seleção": METRICA_PRINCIPAL,
+    "Configurações": numero_configuracoes_arvore,
+    "Divisões": len(divisoes_cv),
+    "Tempo médio de ajuste (s)": resultados_grade_arvore[
+        "mean_fit_time"
+    ][indice_melhor_arvore],
+    "Tempo médio de avaliação (s)": resultados_grade_arvore[
+        "mean_score_time"
+    ][indice_melhor_arvore],
+    "Tempo do ajuste final no treino (s)": (
+        busca_arvore.refit_time_
+    ),
+    "Tempo total da busca com ajuste final (s)": (
+        tempo_total_busca_arvore
+    ),
+}])
+
+print("\nConfigurações ordenadas pelo F1 macro:")
+print(
+    tabela_arvore_grade.round(4).to_string(index=False)
+)
+
+print("\nResumo da configuração selecionada:")
+print(
+    tabela_arvore_ajustada_resumo.round(4).to_string(
+        index=False
+    )
+)
+
+print("\nComparação com a configuração inicial:")
+print(
+    comparacao_arvore_ajuste.round(4).to_string(index=False)
+)
+
+print("\nParâmetros, tamanho da árvore e tempos:")
+print(
+    tabela_arvore_ajustada_tempos.round(6).to_string(
+        index=False
+    )
+)
+
+# Preserva os arquivos dos experimentos anteriores.
+for tabela, nome_arquivo in [
+    (
+        tabela_arvore_busca_completa,
+        "arvore_ajuste_busca_completa.csv",
+    ),
+    (
+        tabela_arvore_grade,
+        "arvore_ajuste_configuracoes.csv",
+    ),
+    (
+        tabela_arvore_ajustada_resumo,
+        "arvore_ajustada_validacao_cruzada_resumo.csv",
+    ),
+    (
+        tabela_arvore_ajustada_tempos,
+        "arvore_ajustada_tempos_parametros.csv",
+    ),
+    (
+        comparacao_arvore_ajuste,
+        "comparacao_arvore_inicial_ajustada.csv",
+    ),
+]:
+    caminho = PASTA_RESULTADOS / nome_arquivo
+
+    tabela.to_csv(
+        caminho,
+        index=False,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        float_format="%.6f",
+    )
+
+    print("\nTabela salva em:", caminho)
+
+print(
+    "\nOs desvios padrão das tabelas resumidas usam ddof=1."
+)
+print(
+    "O arquivo busca_completa preserva o cv_results_ original, "
+    "cujos campos std_* usam a convenção do scikit-learn."
+)
+print(
+    "Limitar profundidade e aumentar o mínimo por folha "
+    "restringem a complexidade da árvore."
+)
+print(
+    "A redução da diferença entre treino e validação "
+    "deve ser examinada junto com o F1 macro obtido."
+)
+print(
+    "A profundidade e as folhas exibidas pertencem à árvore "
+    "ajustada em todo o treino, não às árvores das divisões."
+)
+print(
+    "A melhor média foi selecionada nas mesmas divisões "
+    "usadas para comparar os parâmetros. Ela pode ser otimista "
+    "e não constitui uma avaliação independente."
+)
+print(
+    "A diferença em relação à configuração inicial "
+    "é descritiva; não comprova superioridade estatística."
+)
+print(
+    "melhor_pipeline_arvore está ajustado em todo o treino "
+    "e disponível na memória desta execução."
+)
+print(
+    "O modelo ainda não foi salvo em arquivo nem escolhido "
+    "como vencedor entre todas as famílias."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 21 concluído.")
+
+# %% ==========================================================
+# BLOCO 22 — Ajuste do Random Forest
+# =============================================================
+
+print("\n" + "=" * 70)
+print("BLOCO 22 — AJUSTE DO RANDOM FOREST")
+print("=" * 70)
+
+# Mantém as 200 árvores e os demais parâmetros do modelo inicial.
+# A busca avalia complexidade das árvores e pesos das classes.
+pipeline_forest_busca = criar_pipeline(
+    RandomForestClassifier(
+        n_estimators=200,
+        criterion="gini",
+        min_samples_split=2,
+        max_features="sqrt",
+        bootstrap=True,
+        random_state=SEMENTE_ALEATORIA,
+        n_jobs=1,
+    )
+)
+
+grade_forest = {
+    "modelo__max_depth": [5, 10, None],
+    "modelo__min_samples_leaf": [1, 5, 15],
+    "modelo__class_weight": [None, "balanced"],
+}
+
+numero_configuracoes_forest = len(
+    list(ParameterGrid(grade_forest))
+)
+
+print("\nModelo: Random Forest")
+print("Quantidade de árvores por ajuste: 200")
+print("Profundidades:", grade_forest["modelo__max_depth"])
+print(
+    "Mínimo de registros por folha:",
+    grade_forest["modelo__min_samples_leaf"],
+)
+print("Pesos das classes: None e balanced")
+print("Métrica de seleção:", METRICA_PRINCIPAL)
+print("Configurações:", numero_configuracoes_forest)
+print("Divisões por configuração:", len(divisoes_cv))
+print(
+    "Ajustes na validação cruzada:",
+    numero_configuracoes_forest * len(divisoes_cv),
+)
+print("Registros disponíveis:", len(X_treino))
+
+print(
+    "\nA configuração inicial está incluída na busca."
+)
+print(
+    "O pré-processamento será aprendido dentro "
+    "de cada divisão da validação cruzada."
+)
+print(
+    "Após a seleção, o melhor Pipeline desta grade "
+    "será ajustado em todo o conjunto de treino."
+)
+print(
+    "\nIniciando busca. Cada ajuste treina 200 árvores; "
+    "a execução pode levar alguns minutos."
+)
+
+busca_forest = GridSearchCV(
+    estimator=pipeline_forest_busca,
+    param_grid=grade_forest,
+    scoring=metricas_cv,
+    refit=METRICA_PRINCIPAL,
+    cv=divisoes_cv,
+    return_train_score=True,
+    n_jobs=1,
+    verbose=2,
+    error_score="raise",
+)
+
+inicio_busca_forest = perf_counter()
+
+busca_forest.fit(
+    X_treino,
+    y_treino,
+)
+
+tempo_total_busca_forest = (
+    perf_counter() - inicio_busca_forest
+)
+
+# Pipeline selecionado e ajustado em todo o treino.
+melhor_pipeline_forest = busca_forest.best_estimator_
+
+indice_melhor_forest = busca_forest.best_index_
+resultados_grade_forest = busca_forest.cv_results_
+
+print("\nBusca concluída.")
+print("Parâmetros selecionados:", busca_forest.best_params_)
+print(
+    "F1 macro médio na validação:",
+    f"{busca_forest.best_score_:.4f}",
+)
+print(
+    "Tempo total da busca, incluindo ajuste final:",
+    f"{tempo_total_busca_forest:.2f} s",
+)
+print(
+    "Tempo do ajuste final em todo o treino:",
+    f"{busca_forest.refit_time_:.2f} s",
+)
+
+# Preserva todos os resultados originais da busca.
+tabela_forest_busca_completa = pd.DataFrame(
+    resultados_grade_forest
+)
+
+# Uma linha por configuração.
+linhas_grade_forest = []
+
+for indice, parametros in enumerate(
+    resultados_grade_forest["params"]
+):
+    profundidade = parametros["modelo__max_depth"]
+
+    linha = {
+        "Profundidade máxima": (
+            "Sem limite"
+            if profundidade is None
+            else str(profundidade)
+        ),
+        "Mínimo por folha": parametros[
+            "modelo__min_samples_leaf"
+        ],
+        "Peso das classes": (
+            "Sem ponderação"
+            if parametros["modelo__class_weight"] is None
+            else "balanced"
+        ),
+        "Posição por F1 macro": int(
+            resultados_grade_forest[
+                "rank_test_f1_macro"
+            ][indice]
+        ),
+        "Selecionada": indice == indice_melhor_forest,
+        "Tempo médio de ajuste (s)": resultados_grade_forest[
+            "mean_fit_time"
+        ][indice],
+        "Tempo médio de avaliação (s)": resultados_grade_forest[
+            "mean_score_time"
+        ][indice],
+    }
+
+    for nome_metrica in metricas_cv:
+        valores_treino = np.array([
+            resultados_grade_forest[
+                f"split{divisao}_train_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        valores_validacao = np.array([
+            resultados_grade_forest[
+                f"split{divisao}_test_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        linha[f"Treino - {nome_metrica}"] = np.mean(
+            valores_treino
+        )
+        linha[f"Validação - {nome_metrica}"] = np.mean(
+            valores_validacao
+        )
+        linha[f"DP validação - {nome_metrica}"] = np.std(
+            valores_validacao,
+            ddof=1,
+        )
+
+    linha["Diferença F1 treino - validação (pp)"] = (
+        linha["Treino - f1_macro"]
+        - linha["Validação - f1_macro"]
+    ) * 100
+
+    linhas_grade_forest.append(linha)
+
+tabela_forest_grade = (
+    pd.DataFrame(linhas_grade_forest)
+    .sort_values(
+        by="Posição por F1 macro",
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+# Resumo da configuração selecionada.
+linhas_forest_ajustada_resumo = []
+
+for nome_metrica in metricas_cv:
+    valores_treino = np.array([
+        resultados_grade_forest[
+            f"split{divisao}_train_{nome_metrica}"
+        ][indice_melhor_forest]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    valores_validacao = np.array([
+        resultados_grade_forest[
+            f"split{divisao}_test_{nome_metrica}"
+        ][indice_melhor_forest]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    linhas_forest_ajustada_resumo.append({
+        "Modelo": "Random Forest — ajustada",
+        "Métrica": nome_metrica,
+        "Média no treino": np.mean(valores_treino),
+        "Desvio padrão no treino": np.std(
+            valores_treino,
+            ddof=1,
+        ),
+        "Média na validação": np.mean(valores_validacao),
+        "Desvio padrão na validação": np.std(
+            valores_validacao,
+            ddof=1,
+        ),
+        "Diferença treino - validação": (
+            np.mean(valores_treino)
+            - np.mean(valores_validacao)
+        ),
+    })
+
+tabela_forest_ajustada_resumo = pd.DataFrame(
+    linhas_forest_ajustada_resumo
+)
+
+# Comparação descritiva com o Random Forest inicial.
+comparacao_forest_ajuste = (
+    tabela_forest_resumo[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Inicial - validação",
+    })
+    .merge(
+        tabela_forest_ajustada_resumo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": "Selecionada - validação",
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+)
+
+comparacao_forest_ajuste[
+    "Diferença selecionada - inicial (pp)"
+] = (
+    comparacao_forest_ajuste["Selecionada - validação"]
+    - comparacao_forest_ajuste["Inicial - validação"]
+) * 100
+
+profundidade_selecionada_forest = (
+    busca_forest.best_params_["modelo__max_depth"]
+)
+
+tabela_forest_ajustada_tempos = pd.DataFrame([{
+    "Modelo": "Random Forest — ajustada",
+    "Quantidade de árvores": 200,
+    "Profundidade máxima selecionada": (
+        "Sem limite"
+        if profundidade_selecionada_forest is None
+        else str(profundidade_selecionada_forest)
+    ),
+    "Mínimo por folha selecionado": busca_forest.best_params_[
+        "modelo__min_samples_leaf"
+    ],
+    "Peso das classes": (
+        "Sem ponderação"
+        if busca_forest.best_params_[
+            "modelo__class_weight"
+        ] is None
+        else "balanced"
+    ),
+    "Métrica de seleção": METRICA_PRINCIPAL,
+    "Configurações": numero_configuracoes_forest,
+    "Divisões": len(divisoes_cv),
+    "Tempo médio de ajuste (s)": resultados_grade_forest[
+        "mean_fit_time"
+    ][indice_melhor_forest],
+    "Tempo médio de avaliação (s)": resultados_grade_forest[
+        "mean_score_time"
+    ][indice_melhor_forest],
+    "Tempo do ajuste final no treino (s)": (
+        busca_forest.refit_time_
+    ),
+    "Tempo total da busca com ajuste final (s)": (
+        tempo_total_busca_forest
+    ),
+}])
+
+print("\nConfigurações ordenadas pelo F1 macro:")
+print(
+    tabela_forest_grade.round(4).to_string(index=False)
+)
+
+print("\nResumo da configuração selecionada:")
+print(
+    tabela_forest_ajustada_resumo.round(4).to_string(
+        index=False
+    )
+)
+
+print("\nComparação com a configuração inicial:")
+print(
+    comparacao_forest_ajuste.round(4).to_string(index=False)
+)
+
+print("\nParâmetros e tempos:")
+print(
+    tabela_forest_ajustada_tempos.round(6).to_string(
+        index=False
+    )
+)
+
+# Preserva os arquivos dos experimentos anteriores.
+for tabela, nome_arquivo in [
+    (
+        tabela_forest_busca_completa,
+        "forest_ajuste_busca_completa.csv",
+    ),
+    (
+        tabela_forest_grade,
+        "forest_ajuste_configuracoes.csv",
+    ),
+    (
+        tabela_forest_ajustada_resumo,
+        "forest_ajustada_validacao_cruzada_resumo.csv",
+    ),
+    (
+        tabela_forest_ajustada_tempos,
+        "forest_ajustada_tempos_parametros.csv",
+    ),
+    (
+        comparacao_forest_ajuste,
+        "comparacao_forest_inicial_ajustada.csv",
+    ),
+]:
+    caminho = PASTA_RESULTADOS / nome_arquivo
+
+    tabela.to_csv(
+        caminho,
+        index=False,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        float_format="%.6f",
+    )
+
+    print("\nTabela salva em:", caminho)
+
+print(
+    "\nOs desvios padrão das tabelas resumidas usam ddof=1."
+)
+print(
+    "O arquivo busca_completa preserva o cv_results_ original, "
+    "cujos campos std_* usam a convenção do scikit-learn."
+)
+print(
+    "Esta busca mantém 200 árvores e max_features=sqrt. "
+    "Ela não explora todos os hiperparâmetros possíveis."
+)
+print(
+    "A redução da diferença entre treino e validação "
+    "deve ser examinada junto com o F1 macro obtido."
+)
+print(
+    "A melhor média foi selecionada nas mesmas divisões "
+    "usadas para comparar os parâmetros. Ela pode ser otimista "
+    "e não constitui uma avaliação independente."
+)
+print(
+    "A diferença em relação à configuração inicial "
+    "é descritiva; não comprova superioridade estatística."
+)
+print(
+    "melhor_pipeline_forest está ajustado em todo o treino "
+    "e disponível na memória desta execução."
+)
+print(
+    "O modelo ainda não foi salvo em arquivo nem escolhido "
+    "como vencedor entre todas as famílias."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 22 concluído.")
+
+

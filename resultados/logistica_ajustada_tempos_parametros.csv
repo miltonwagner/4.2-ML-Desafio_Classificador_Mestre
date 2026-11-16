@@ -1,0 +1,2 @@
+﻿Modelo;C selecionado;Peso das classes;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
+Regressão Logística — ajustada;0,100000;balanced;f1_macro;14;5;0,403690;0,064229;0,503208;94,782702
