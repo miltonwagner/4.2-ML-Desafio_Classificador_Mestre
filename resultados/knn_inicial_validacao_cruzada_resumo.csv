@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+KNN — inicial;acuracia;0,793927;0,003412;0,698968;0,004826;0,094960
+KNN — inicial;precisao_macro;0,764709;0,006443;0,636438;0,009658;0,128271
+KNN — inicial;recall_macro;0,721448;0,003726;0,608199;0,011391;0,113249
+KNN — inicial;f1_macro;0,735493;0,004249;0,614599;0,011805;0,120894

@@ -1,0 +1,17 @@
+﻿Variável;Quantidade válida;Média;Desvio padrão;Mínimo;1º quartil (25%);Mediana (50%);3º quartil (75%);Máximo
+Age at enrollment;4424;23,2651;7,5878;17,0000;19,0000;20,0000;25,0000;70,0000
+Curricular units 1st sem (credited);4424;0,7100;2,3605;0,0000;0,0000;0,0000;0,0000;20,0000
+Curricular units 1st sem (enrolled);4424;6,2706;2,4802;0,0000;5,0000;6,0000;7,0000;26,0000
+Curricular units 1st sem (evaluations);4424;8,2991;4,1791;0,0000;6,0000;8,0000;10,0000;45,0000
+Curricular units 1st sem (approved);4424;4,7066;3,0942;0,0000;3,0000;5,0000;6,0000;26,0000
+Curricular units 1st sem (grade);4424;10,6408;4,8437;0,0000;11,0000;12,2857;13,4000;18,8750
+Curricular units 1st sem (without evaluations);4424;0,1377;0,6909;0,0000;0,0000;0,0000;0,0000;12,0000
+Curricular units 2nd sem (credited);4424;0,5418;1,9185;0,0000;0,0000;0,0000;0,0000;19,0000
+Curricular units 2nd sem (enrolled);4424;6,2321;2,1960;0,0000;5,0000;6,0000;7,0000;23,0000
+Curricular units 2nd sem (evaluations);4424;8,0633;3,9480;0,0000;6,0000;8,0000;10,0000;33,0000
+Curricular units 2nd sem (approved);4424;4,4358;3,0148;0,0000;2,0000;5,0000;6,0000;20,0000
+Curricular units 2nd sem (grade);4424;10,2302;5,2108;0,0000;10,7500;12,2000;13,3333;18,5714
+Curricular units 2nd sem (without evaluations);4424;0,1503;0,7538;0,0000;0,0000;0,0000;0,0000;12,0000
+Unemployment rate;4424;11,5661;2,6639;7,6000;9,4000;11,1000;13,9000;16,2000
+Inflation rate;4424;1,2280;1,3827;-0,8000;0,3000;1,4000;2,6000;3,7000
+GDP;4424;0,0020;2,2699;-4,0600;-1,7000;0,3200;1,7900;3,5100

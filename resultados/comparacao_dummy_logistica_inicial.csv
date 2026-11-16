@@ -1,0 +1,5 @@
+﻿Métrica;Dummy - média na validação;Logística - média na validação;Ganho sobre Dummy (pontos percentuais)
+acuracia;0,499354;0,772609;27,325551
+precisao_macro;0,166451;0,722453;55,600149
+recall_macro;0,333333;0,685788;35,245476
+f1_macro;0,222031;0,695579;47,354796

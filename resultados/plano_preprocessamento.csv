@@ -1,0 +1,35 @@
+﻿Variável;Grupo;Tratamento
+Age at enrollment;Quantitativa;StandardScaler
+Curricular units 1st sem (credited);Quantitativa;StandardScaler
+Curricular units 1st sem (enrolled);Quantitativa;StandardScaler
+Curricular units 1st sem (evaluations);Quantitativa;StandardScaler
+Curricular units 1st sem (approved);Quantitativa;StandardScaler
+Curricular units 1st sem (grade);Quantitativa;StandardScaler
+Curricular units 1st sem (without evaluations);Quantitativa;StandardScaler
+Curricular units 2nd sem (credited);Quantitativa;StandardScaler
+Curricular units 2nd sem (enrolled);Quantitativa;StandardScaler
+Curricular units 2nd sem (evaluations);Quantitativa;StandardScaler
+Curricular units 2nd sem (approved);Quantitativa;StandardScaler
+Curricular units 2nd sem (grade);Quantitativa;StandardScaler
+Curricular units 2nd sem (without evaluations);Quantitativa;StandardScaler
+Unemployment rate;Quantitativa;StandardScaler
+Inflation rate;Quantitativa;StandardScaler
+GDP;Quantitativa;StandardScaler
+Application order;Ordinal numérica;StandardScaler
+Marital status;Categórica;OneHotEncoder
+Application mode;Categórica;OneHotEncoder
+Course;Categórica;OneHotEncoder
+Previous qualification;Categórica;OneHotEncoder
+Nacionality;Categórica;OneHotEncoder
+Mother's qualification;Categórica;OneHotEncoder
+Father's qualification;Categórica;OneHotEncoder
+Mother's occupation;Categórica;OneHotEncoder
+Father's occupation;Categórica;OneHotEncoder
+Gender;Categórica;OneHotEncoder
+Daytime/evening attendance;Binária;Preservar 0 e 1
+Displaced;Binária;Preservar 0 e 1
+Educational special needs;Binária;Preservar 0 e 1
+Debtor;Binária;Preservar 0 e 1
+Tuition fees up to date;Binária;Preservar 0 e 1
+Scholarship holder;Binária;Preservar 0 e 1
+International;Binária;Preservar 0 e 1

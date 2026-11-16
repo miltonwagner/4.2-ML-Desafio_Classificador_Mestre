@@ -1,0 +1,5 @@
+﻿Métrica;Dummy;Regressão Logística;KNN;Árvore de Decisão;Random Forest;Forest - Dummy (pontos percentuais);Forest - Logística (pontos percentuais)
+acuracia;0,499354;0,772609;0,698968;0,680545;0,769705;27,035072;-0,290479
+precisao_macro;0,166451;0,722453;0,636438;0,618263;0,726868;56,041710;0,441560
+recall_macro;0,333333;0,685788;0,608199;0,617979;0,666497;33,316413;-1,929063
+f1_macro;0,222031;0,695579;0,614599;0,617310;0,674694;45,266303;-2,088492

@@ -1,0 +1,5 @@
+﻿Métrica;Dummy;Regressão Logística;KNN;Árvore de Decisão;Árvore - Dummy (pontos percentuais);Árvore - Logística (pontos percentuais)
+acuracia;0,499354;0,772609;0,698968;0,680545;18,119131;-9,206420
+precisao_macro;0,166451;0,722453;0,636438;0,618263;45,181159;-10,418990
+recall_macro;0,333333;0,685788;0,608199;0,617979;28,464610;-6,780866
+f1_macro;0,222031;0,695579;0,614599;0,617310;39,527979;-7,826817

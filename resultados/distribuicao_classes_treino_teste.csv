@@ -1,0 +1,10 @@
+﻿Conjunto;Classe;Quantidade;Percentual no conjunto (%)
+Original;Dropout;1421;32,1203
+Original;Enrolled;794;17,9476
+Original;Graduate;2209;49,9322
+Treino;Dropout;994;32,1059
+Treino;Enrolled;556;17,9587
+Treino;Graduate;1546;49,9354
+Teste;Dropout;427;32,1536
+Teste;Enrolled;238;17,9217
+Teste;Graduate;663;49,9247

@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+Árvore de Decisão — inicial;acuracia;1,000000;0,000000;0,680545;0,023883;0,319455
+Árvore de Decisão — inicial;precisao_macro;1,000000;0,000000;0,618263;0,025023;0,381737
+Árvore de Decisão — inicial;recall_macro;1,000000;0,000000;0,617979;0,021104;0,382021
+Árvore de Decisão — inicial;f1_macro;1,000000;0,000000;0,617310;0,022534;0,382690

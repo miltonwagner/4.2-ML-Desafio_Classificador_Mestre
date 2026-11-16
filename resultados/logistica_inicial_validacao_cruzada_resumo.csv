@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+Regressão Logística — inicial;acuracia;0,810643;0,004674;0,772609;0,020262;0,038034
+Regressão Logística — inicial;precisao_macro;0,781489;0,005701;0,722453;0,029895;0,059036
+Regressão Logística — inicial;recall_macro;0,735028;0,004809;0,685788;0,020686;0,049240
+Regressão Logística — inicial;f1_macro;0,749827;0,004794;0,695579;0,022339;0,054248

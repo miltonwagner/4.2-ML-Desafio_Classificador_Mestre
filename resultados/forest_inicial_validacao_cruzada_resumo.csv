@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+Random Forest — inicial;acuracia;1,000000;0,000000;0,769705;0,016821;0,230295
+Random Forest — inicial;precisao_macro;1,000000;0,000000;0,726868;0,023062;0,273132
+Random Forest — inicial;recall_macro;1,000000;0,000000;0,666497;0,018518;0,333503
+Random Forest — inicial;f1_macro;1,000000;0,000000;0,674694;0,020573;0,325306

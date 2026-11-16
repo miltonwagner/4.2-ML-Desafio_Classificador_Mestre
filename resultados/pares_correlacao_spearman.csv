@@ -1,0 +1,121 @@
+﻿Variável A;Variável B;Correlação de Spearman;Correlação absoluta
+Curricular units 1st sem (enrolled);Curricular units 2nd sem (enrolled);0,9618;0,9618
+Curricular units 1st sem (credited);Curricular units 2nd sem (credited);0,9143;0,9143
+Curricular units 1st sem (approved);Curricular units 2nd sem (approved);0,8917;0,8917
+Curricular units 1st sem (grade);Curricular units 2nd sem (grade);0,7624;0,7624
+Curricular units 1st sem (enrolled);Curricular units 1st sem (approved);0,7066;0,7066
+Curricular units 1st sem (approved);Curricular units 2nd sem (enrolled);0,6994;0,6994
+Curricular units 2nd sem (approved);Curricular units 2nd sem (grade);0,6937;0,6937
+Curricular units 1st sem (evaluations);Curricular units 2nd sem (evaluations);0,6936;0,6936
+Curricular units 2nd sem (enrolled);Curricular units 2nd sem (approved);0,6742;0,6742
+Curricular units 1st sem (approved);Curricular units 2nd sem (grade);0,6628;0,6628
+Curricular units 1st sem (enrolled);Curricular units 2nd sem (approved);0,6532;0,6532
+Curricular units 1st sem (approved);Curricular units 1st sem (grade);0,6398;0,6398
+Curricular units 1st sem (grade);Curricular units 2nd sem (approved);0,6286;0,6286
+Curricular units 1st sem (enrolled);Curricular units 2nd sem (credited);0,4401;0,4401
+Curricular units 2nd sem (enrolled);Curricular units 2nd sem (evaluations);0,4399;0,4399
+Curricular units 1st sem (enrolled);Curricular units 2nd sem (evaluations);0,4313;0,4313
+Curricular units 1st sem (credited);Curricular units 1st sem (enrolled);0,4231;0,4231
+Curricular units 1st sem (enrolled);Curricular units 1st sem (evaluations);0,4202;0,4202
+Curricular units 2nd sem (credited);Curricular units 2nd sem (enrolled);0,4136;0,4136
+Curricular units 1st sem (evaluations);Curricular units 2nd sem (enrolled);0,3857;0,3857
+Curricular units 1st sem (without evaluations);Curricular units 2nd sem (without evaluations);0,3836;0,3836
+Curricular units 1st sem (credited);Curricular units 2nd sem (enrolled);0,3761;0,3761
+Curricular units 1st sem (evaluations);Curricular units 2nd sem (credited);0,3693;0,3693
+Curricular units 1st sem (grade);Curricular units 2nd sem (enrolled);0,3680;0,3680
+Curricular units 1st sem (approved);Curricular units 2nd sem (credited);0,3669;0,3669
+Curricular units 1st sem (credited);Curricular units 1st sem (evaluations);0,3665;0,3665
+Curricular units 2nd sem (enrolled);Curricular units 2nd sem (grade);0,3644;0,3644
+Curricular units 1st sem (approved);Curricular units 2nd sem (evaluations);0,3643;0,3643
+Curricular units 1st sem (enrolled);Curricular units 1st sem (grade);0,3632;0,3632
+Curricular units 1st sem (credited);Curricular units 1st sem (approved);0,3615;0,3615
+Curricular units 1st sem (enrolled);Curricular units 2nd sem (grade);0,3515;0,3515
+Curricular units 2nd sem (credited);Curricular units 2nd sem (evaluations);0,3423;0,3423
+Curricular units 1st sem (credited);Curricular units 2nd sem (evaluations);0,3305;0,3305
+Curricular units 2nd sem (credited);Curricular units 2nd sem (approved);0,3192;0,3192
+Curricular units 2nd sem (evaluations);Curricular units 2nd sem (approved);0,3026;0,3026
+Age at enrollment;Curricular units 2nd sem (credited);0,3006;0,3006
+Age at enrollment;Curricular units 1st sem (credited);0,2989;0,2989
+Curricular units 1st sem (credited);Curricular units 2nd sem (approved);0,2888;0,2888
+Unemployment rate;GDP;-0,2879;0,2879
+Curricular units 1st sem (evaluations);Curricular units 1st sem (approved);0,2621;0,2621
+Curricular units 1st sem (evaluations);Curricular units 2nd sem (approved);0,2516;0,2516
+Age at enrollment;Curricular units 2nd sem (grade);-0,2135;0,2135
+Age at enrollment;Curricular units 1st sem (grade);-0,2099;0,2099
+Curricular units 1st sem (evaluations);Curricular units 1st sem (without evaluations);0,2021;0,2021
+Age at enrollment;Curricular units 2nd sem (approved);-0,1880;0,1880
+Curricular units 1st sem (without evaluations);GDP;-0,1836;0,1836
+Curricular units 1st sem (grade);Curricular units 2nd sem (evaluations);0,1819;0,1819
+Curricular units 2nd sem (evaluations);Curricular units 2nd sem (grade);0,1717;0,1717
+Age at enrollment;Curricular units 1st sem (evaluations);0,1706;0,1706
+Age at enrollment;Curricular units 1st sem (approved);-0,1658;0,1658
+Curricular units 2nd sem (evaluations);Curricular units 2nd sem (without evaluations);0,1595;0,1595
+Curricular units 1st sem (evaluations);Curricular units 2nd sem (without evaluations);0,1528;0,1528
+Curricular units 2nd sem (enrolled);Unemployment rate;0,1389;0,1389
+Curricular units 1st sem (evaluations);Curricular units 1st sem (grade);0,1119;0,1119
+Curricular units 2nd sem (without evaluations);GDP;-0,1106;0,1106
+Curricular units 1st sem (enrolled);Unemployment rate;0,1083;0,1083
+Curricular units 2nd sem (grade);GDP;0,1053;0,1053
+Curricular units 2nd sem (credited);Curricular units 2nd sem (grade);0,1034;0,1034
+Inflation rate;GDP;-0,1018;0,1018
+Curricular units 1st sem (credited);Curricular units 1st sem (grade);0,1008;0,1008
+Curricular units 1st sem (credited);Curricular units 1st sem (without evaluations);0,1000;0,1000
+Curricular units 1st sem (grade);Curricular units 2nd sem (credited);0,0969;0,0969
+Curricular units 1st sem (evaluations);GDP;-0,0967;0,0967
+Curricular units 1st sem (without evaluations);Curricular units 2nd sem (evaluations);0,0963;0,0963
+Age at enrollment;Curricular units 2nd sem (without evaluations);0,0945;0,0945
+Curricular units 1st sem (credited);Curricular units 2nd sem (grade);0,0935;0,0935
+Curricular units 1st sem (grade);GDP;0,0918;0,0918
+Curricular units 1st sem (evaluations);Curricular units 2nd sem (grade);0,0902;0,0902
+Age at enrollment;Curricular units 2nd sem (evaluations);0,0827;0,0827
+Curricular units 2nd sem (credited);Curricular units 2nd sem (without evaluations);0,0824;0,0824
+Curricular units 1st sem (approved);Unemployment rate;0,0743;0,0743
+Curricular units 1st sem (approved);Curricular units 2nd sem (without evaluations);-0,0734;0,0734
+Curricular units 2nd sem (approved);Unemployment rate;0,0703;0,0703
+Curricular units 1st sem (approved);Curricular units 1st sem (without evaluations);-0,0689;0,0689
+Curricular units 1st sem (without evaluations);Inflation rate;-0,0679;0,0679
+Curricular units 1st sem (evaluations);Unemployment rate;0,0670;0,0670
+Curricular units 1st sem (without evaluations);Unemployment rate;-0,0669;0,0669
+Curricular units 1st sem (credited);Curricular units 2nd sem (without evaluations);0,0639;0,0639
+Curricular units 2nd sem (approved);Curricular units 2nd sem (without evaluations);-0,0635;0,0635
+Curricular units 2nd sem (evaluations);Unemployment rate;0,0613;0,0613
+Age at enrollment;Curricular units 1st sem (without evaluations);0,0609;0,0609
+Curricular units 1st sem (approved);GDP;0,0593;0,0593
+Curricular units 1st sem (without evaluations);Curricular units 2nd sem (credited);0,0587;0,0587
+Age at enrollment;GDP;-0,0565;0,0565
+Curricular units 1st sem (without evaluations);Curricular units 2nd sem (approved);-0,0546;0,0546
+Unemployment rate;Inflation rate;-0,0545;0,0545
+Curricular units 2nd sem (without evaluations);Unemployment rate;-0,0531;0,0531
+Curricular units 2nd sem (grade);Curricular units 2nd sem (without evaluations);-0,0516;0,0516
+Curricular units 2nd sem (approved);GDP;0,0481;0,0481
+Curricular units 1st sem (grade);Curricular units 2nd sem (without evaluations);-0,0467;0,0467
+Curricular units 1st sem (grade);Unemployment rate;0,0450;0,0450
+Curricular units 2nd sem (grade);Inflation rate;-0,0435;0,0435
+Curricular units 2nd sem (grade);Unemployment rate;0,0425;0,0425
+Curricular units 1st sem (without evaluations);Curricular units 2nd sem (grade);-0,0408;0,0408
+Curricular units 1st sem (evaluations);Inflation rate;-0,0397;0,0397
+Curricular units 1st sem (grade);Inflation rate;-0,0374;0,0374
+Curricular units 1st sem (without evaluations);Curricular units 2nd sem (enrolled);-0,0324;0,0324
+Age at enrollment;Curricular units 2nd sem (enrolled);-0,0315;0,0315
+Curricular units 2nd sem (enrolled);Curricular units 2nd sem (without evaluations);-0,0274;0,0274
+Curricular units 2nd sem (without evaluations);Inflation rate;-0,0273;0,0273
+Curricular units 1st sem (credited);Unemployment rate;0,0242;0,0242
+Curricular units 2nd sem (evaluations);Inflation rate;-0,0240;0,0240
+Curricular units 2nd sem (credited);GDP;0,0238;0,0238
+Curricular units 1st sem (credited);GDP;0,0218;0,0218
+Curricular units 1st sem (enrolled);Curricular units 2nd sem (without evaluations);-0,0206;0,0206
+Curricular units 1st sem (enrolled);Curricular units 1st sem (without evaluations);-0,0188;0,0188
+Curricular units 2nd sem (enrolled);GDP;0,0187;0,0187
+Age at enrollment;Unemployment rate;0,0186;0,0186
+Age at enrollment;Inflation rate;0,0182;0,0182
+Curricular units 1st sem (enrolled);GDP;0,0180;0,0180
+Curricular units 1st sem (grade);Curricular units 1st sem (without evaluations);-0,0169;0,0169
+Curricular units 1st sem (enrolled);Inflation rate;0,0169;0,0169
+Curricular units 2nd sem (approved);Inflation rate;-0,0149;0,0149
+Curricular units 2nd sem (credited);Unemployment rate;0,0122;0,0122
+Curricular units 2nd sem (enrolled);Inflation rate;0,0090;0,0090
+Curricular units 2nd sem (evaluations);GDP;-0,0042;0,0042
+Curricular units 1st sem (approved);Inflation rate;-0,0025;0,0025
+Curricular units 1st sem (credited);Inflation rate;-0,0018;0,0018
+Age at enrollment;Curricular units 1st sem (enrolled);0,0008;0,0008
+Curricular units 2nd sem (credited);Inflation rate;-0,0005;0,0005

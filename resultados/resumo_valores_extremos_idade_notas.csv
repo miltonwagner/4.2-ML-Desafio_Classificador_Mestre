@@ -1,0 +1,4 @@
+﻿Variável;Descrição;Quantidade válida;Quantidade de zeros;1º quartil;3º quartil;IQR;Limite inferior;Limite superior;Abaixo do limite;Acima do limite;Total potencialmente extremo;Percentual potencialmente extremo (%)
+Age at enrollment;Idade na matrícula;4424;0;19,0000;25,0000;6,0000;10,0000;34,0000;0;441;441;9,9684
+Curricular units 1st sem (grade);Nota média do 1º semestre;4424;718;11,0000;13,4000;2,4000;7,4000;17,0000;718;8;726;16,4105
+Curricular units 2nd sem (grade);Nota média do 2º semestre;4424;870;10,7500;13,3333;2,5833;6,8750;17,2083;870;7;877;19,8237

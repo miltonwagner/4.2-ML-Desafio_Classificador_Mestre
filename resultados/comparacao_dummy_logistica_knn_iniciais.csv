@@ -1,0 +1,5 @@
+﻿Métrica;Dummy;Regressão Logística;KNN;KNN - Dummy (pontos percentuais);KNN - Logística (pontos percentuais)
+acuracia;0,499354;0,772609;0,698968;19,961384;-7,364167
+precisao_macro;0,166451;0,722453;0,636438;46,998706;-8,601443
+recall_macro;0,333333;0,685788;0,608199;27,486562;-7,758914
+f1_macro;0,222031;0,695579;0,614599;39,256862;-8,097934

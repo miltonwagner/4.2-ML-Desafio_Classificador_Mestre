@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+Dummy — classe mais frequente;acuracia;0,499354;0,000090;0,499354;0,000361;0,000000
+Dummy — classe mais frequente;precisao_macro;0,166451;0,000030;0,166451;0,000120;0,000000
+Dummy — classe mais frequente;recall_macro;0,333333;0,000000;0,333333;0,000000;0,000000
+Dummy — classe mais frequente;f1_macro;0,222031;0,000027;0,222031;0,000107;0,000000
