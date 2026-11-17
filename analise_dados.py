@@ -5379,4 +5379,905 @@ print(
 print("\nO conjunto de teste reservado não foi utilizado.")
 print("\nBloco 22 concluído.")
 
+# %% ==========================================================
+# BLOCO 23 — Ajuste de SVM linear e RBF
+# =============================================================
+
+import warnings
+from time import perf_counter
+
+from sklearn.base import clone
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.model_selection import GridSearchCV, ParameterGrid
+
+print("\n" + "=" * 70)
+print("BLOCO 23 — AJUSTE DE SVM LINEAR E RBF")
+print("=" * 70)
+
+# Mantém os classificadores iniciais do Bloco 16.
+# clone cria estimadores independentes e sem ajuste.
+# criar_pipeline inclui uma cópia do preprocessador.
+#
+# C controla a penalização dos erros.
+# gamma controla o alcance da influência no kernel RBF.
+# class_weight="balanced" calcula pesos a partir das
+# frequências das classes em cada parte de treino.
+
+grade_svm_linear = {
+    "modelo__C": [0.01, 0.1, 1.0, 10.0],
+    "modelo__class_weight": [None, "balanced"],
+}
+
+grade_svm_rbf = {
+    "modelo__C": [0.1, 1.0, 10.0],
+    "modelo__gamma": ["scale", 0.001, 0.01],
+    "modelo__class_weight": [None, "balanced"],
+}
+
+numero_configuracoes_svm_linear = len(
+    list(ParameterGrid(grade_svm_linear))
+)
+
+numero_configuracoes_svm_rbf = len(
+    list(ParameterGrid(grade_svm_rbf))
+)
+
+numero_configuracoes_svm_total = (
+    numero_configuracoes_svm_linear
+    + numero_configuracoes_svm_rbf
+)
+
+print("\nMétrica de seleção:", METRICA_PRINCIPAL)
+print("Divisões por configuração:", len(divisoes_cv))
+print("Registros disponíveis no treino:", len(X_treino))
+print(
+    "Configurações do SVM linear:",
+    numero_configuracoes_svm_linear,
+)
+print(
+    "Configurações do SVM RBF:",
+    numero_configuracoes_svm_rbf,
+)
+print(
+    "Total de configurações:",
+    numero_configuracoes_svm_total,
+)
+print(
+    "Total de ajustes na validação cruzada:",
+    numero_configuracoes_svm_total * len(divisoes_cv),
+)
+
+print(
+    "\nAs configurações iniciais dos dois kernels "
+    "estão incluídas nas respectivas grades."
+)
+print(
+    "O pré-processamento será ajustado dentro "
+    "de cada divisão da validação cruzada."
+)
+print(
+    "Cada busca selecionará uma configuração pelo F1 macro "
+    "e fará um ajuste final em todo o treino."
+)
+print(
+    "As duas buscas serão executadas em sequência. "
+    "O tempo dependerá do computador e das configurações."
+)
+
+# Dicionários preservam os resultados dos dois kernels.
+buscas_svm = {}
+melhores_pipelines_svm = {}
+tabelas_svm_busca_completa = {}
+tabelas_svm_grade_ajuste = {}
+tabelas_svm_ajustadas_resumo = {}
+tabelas_svm_ajustadas_tempos = {}
+comparacoes_svm_ajuste = {}
+
+configuracoes_svm_ajuste = [
+    (
+        "linear",
+        "SVM linear — ajustado",
+        classificador_svm_linear,
+        grade_svm_linear,
+        tabela_svm_linear_resumo,
+    ),
+    (
+        "rbf",
+        "SVM RBF — ajustado",
+        classificador_svm_rbf,
+        grade_svm_rbf,
+        tabela_svm_rbf_resumo,
+    ),
+]
+
+for (
+    identificador,
+    nome_modelo,
+    classificador_inicial,
+    grade,
+    tabela_inicial,
+) in configuracoes_svm_ajuste:
+
+    print("\n" + "-" * 70)
+    print("AJUSTANDO:", nome_modelo)
+    print("-" * 70)
+
+    numero_configuracoes = len(list(ParameterGrid(grade)))
+
+    print("\nGrade:", grade)
+    print("Configurações:", numero_configuracoes)
+    print(
+        "Ajustes na validação cruzada:",
+        numero_configuracoes * len(divisoes_cv),
+    )
+
+    pipeline_svm_busca = criar_pipeline(
+        clone(classificador_inicial)
+    )
+
+    busca_svm = GridSearchCV(
+        estimator=pipeline_svm_busca,
+        param_grid=grade,
+        scoring=metricas_cv,
+        refit=METRICA_PRINCIPAL,
+        cv=divisoes_cv,
+        return_train_score=True,
+        n_jobs=1,
+        verbose=2,
+        error_score="raise",
+    )
+
+    inicio_busca_svm = perf_counter()
+
+    # Mantém o tratamento de convergência do Bloco 16.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", ConvergenceWarning)
+
+        busca_svm.fit(
+            X_treino,
+            y_treino,
+        )
+
+    tempo_total_busca_svm = (
+        perf_counter() - inicio_busca_svm
+    )
+
+    resultados_grade_svm = busca_svm.cv_results_
+    indice_melhor_svm = busca_svm.best_index_
+
+    buscas_svm[identificador] = busca_svm
+    melhores_pipelines_svm[identificador] = (
+        busca_svm.best_estimator_
+    )
+
+    print("\nBusca concluída.")
+    print("Parâmetros selecionados:", busca_svm.best_params_)
+    print(
+        "F1 macro médio na validação:",
+        f"{busca_svm.best_score_:.4f}",
+    )
+    print(
+        "Tempo total da busca, incluindo ajuste final:",
+        f"{tempo_total_busca_svm:.2f} s",
+    )
+
+    # Preserva o cv_results_ completo.
+    tabela_busca_completa_svm = pd.DataFrame(
+        resultados_grade_svm
+    )
+
+    # Uma linha por configuração, com médias e DP.
+    linhas_grade_svm = []
+
+    for indice, parametros in enumerate(
+        resultados_grade_svm["params"]
+    ):
+        linha = {
+            "Modelo": nome_modelo,
+            "Kernel": identificador,
+            "C": parametros["modelo__C"],
+            "Gamma": (
+                parametros["modelo__gamma"]
+                if identificador == "rbf"
+                else "Não se aplica"
+            ),
+            "Peso das classes": (
+                "Sem ponderação"
+                if parametros["modelo__class_weight"] is None
+                else "balanced"
+            ),
+            "Posição por F1 macro": int(
+                resultados_grade_svm[
+                    "rank_test_f1_macro"
+                ][indice]
+            ),
+            "Selecionada": indice == indice_melhor_svm,
+            "Tempo médio de ajuste (s)": (
+                resultados_grade_svm["mean_fit_time"][indice]
+            ),
+            "Tempo médio de avaliação (s)": (
+                resultados_grade_svm["mean_score_time"][indice]
+            ),
+        }
+
+        for nome_metrica in metricas_cv:
+            valores_treino = np.array([
+                resultados_grade_svm[
+                    f"split{divisao}_train_{nome_metrica}"
+                ][indice]
+                for divisao in range(len(divisoes_cv))
+            ])
+
+            valores_validacao = np.array([
+                resultados_grade_svm[
+                    f"split{divisao}_test_{nome_metrica}"
+                ][indice]
+                for divisao in range(len(divisoes_cv))
+            ])
+
+            linha[f"Treino - {nome_metrica}"] = (
+                np.mean(valores_treino)
+            )
+            linha[f"Validação - {nome_metrica}"] = (
+                np.mean(valores_validacao)
+            )
+            linha[f"DP validação - {nome_metrica}"] = (
+                np.std(valores_validacao, ddof=1)
+            )
+
+        linha["Diferença F1 treino - validação (pp)"] = (
+            linha["Treino - f1_macro"]
+            - linha["Validação - f1_macro"]
+        ) * 100
+
+        linhas_grade_svm.append(linha)
+
+    tabela_grade_svm = (
+        pd.DataFrame(linhas_grade_svm)
+        .sort_values(
+            by="Posição por F1 macro",
+            kind="stable",
+        )
+        .reset_index(drop=True)
+    )
+
+    # Resumo da configuração selecionada.
+    linhas_resumo_svm_ajustado = []
+
+    for nome_metrica in metricas_cv:
+        valores_treino = np.array([
+            resultados_grade_svm[
+                f"split{divisao}_train_{nome_metrica}"
+            ][indice_melhor_svm]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        valores_validacao = np.array([
+            resultados_grade_svm[
+                f"split{divisao}_test_{nome_metrica}"
+            ][indice_melhor_svm]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        linhas_resumo_svm_ajustado.append({
+            "Modelo": nome_modelo,
+            "Métrica": nome_metrica,
+            "Média no treino": np.mean(valores_treino),
+            "Desvio padrão no treino": np.std(
+                valores_treino,
+                ddof=1,
+            ),
+            "Média na validação": np.mean(valores_validacao),
+            "Desvio padrão na validação": np.std(
+                valores_validacao,
+                ddof=1,
+            ),
+            "Diferença treino - validação": (
+                np.mean(valores_treino)
+                - np.mean(valores_validacao)
+            ),
+        })
+
+    tabela_resumo_svm_ajustado = pd.DataFrame(
+        linhas_resumo_svm_ajustado
+    )
+
+    # Compara cada kernel com sua configuração inicial.
+    comparacao_svm_ajuste = (
+        tabela_inicial[
+            ["Métrica", "Média na validação"]
+        ]
+        .rename(columns={
+            "Média na validação": "Inicial - validação",
+        })
+        .merge(
+            tabela_resumo_svm_ajustado[
+                ["Métrica", "Média na validação"]
+            ].rename(columns={
+                "Média na validação": "Selecionada - validação",
+            }),
+            on="Métrica",
+            validate="one_to_one",
+        )
+    )
+
+    comparacao_svm_ajuste[
+        "Diferença selecionada - inicial (pp)"
+    ] = (
+        comparacao_svm_ajuste["Selecionada - validação"]
+        - comparacao_svm_ajuste["Inicial - validação"]
+    ) * 100
+
+    tabela_tempos_svm_ajustado = pd.DataFrame([{
+        "Modelo": nome_modelo,
+        "Kernel": identificador,
+        "C selecionado": busca_svm.best_params_["modelo__C"],
+        "Gamma selecionado": (
+            busca_svm.best_params_["modelo__gamma"]
+            if identificador == "rbf"
+            else "Não se aplica"
+        ),
+        "Peso das classes": (
+            "Sem ponderação"
+            if busca_svm.best_params_[
+                "modelo__class_weight"
+            ] is None
+            else "balanced"
+        ),
+        "Métrica de seleção": METRICA_PRINCIPAL,
+        "Configurações": numero_configuracoes,
+        "Divisões": len(divisoes_cv),
+        "Tempo médio de ajuste (s)": resultados_grade_svm[
+            "mean_fit_time"
+        ][indice_melhor_svm],
+        "Tempo médio de avaliação (s)": resultados_grade_svm[
+            "mean_score_time"
+        ][indice_melhor_svm],
+        "Tempo do ajuste final no treino (s)": (
+            busca_svm.refit_time_
+        ),
+        "Tempo total da busca com ajuste final (s)": (
+            tempo_total_busca_svm
+        ),
+    }])
+
+    tabelas_svm_busca_completa[identificador] = (
+        tabela_busca_completa_svm
+    )
+    tabelas_svm_grade_ajuste[identificador] = tabela_grade_svm
+    tabelas_svm_ajustadas_resumo[identificador] = (
+        tabela_resumo_svm_ajustado
+    )
+    tabelas_svm_ajustadas_tempos[identificador] = (
+        tabela_tempos_svm_ajustado
+    )
+    comparacoes_svm_ajuste[identificador] = (
+        comparacao_svm_ajuste
+    )
+
+    print("\nConfigurações ordenadas pelo F1 macro:")
+    print(tabela_grade_svm.round(4).to_string(index=False))
+
+    print("\nResumo da configuração selecionada:")
+    print(
+        tabela_resumo_svm_ajustado.round(4).to_string(
+            index=False
+        )
+    )
+
+    print("\nComparação com a configuração inicial:")
+    print(
+        comparacao_svm_ajuste.round(4).to_string(index=False)
+    )
+
+    print("\nParâmetros e tempos:")
+    print(
+        tabela_tempos_svm_ajustado.round(6).to_string(
+            index=False
+        )
+    )
+
+    prefixo_svm_ajuste = f"svm_{identificador}"
+
+    for tabela, sufixo in [
+        (
+            tabela_busca_completa_svm,
+            "ajuste_busca_completa",
+        ),
+        (
+            tabela_grade_svm,
+            "ajuste_configuracoes",
+        ),
+        (
+            tabela_resumo_svm_ajustado,
+            "ajustado_validacao_cruzada_resumo",
+        ),
+        (
+            tabela_tempos_svm_ajustado,
+            "ajustado_tempos_parametros",
+        ),
+        (
+            comparacao_svm_ajuste,
+            "comparacao_inicial_ajustado",
+        ),
+    ]:
+        caminho_svm_ajuste = (
+            PASTA_RESULTADOS
+            / f"{prefixo_svm_ajuste}_{sufixo}.csv"
+        )
+
+        tabela.to_csv(
+            caminho_svm_ajuste,
+            index=False,
+            sep=";",
+            encoding="utf-8-sig",
+            decimal=",",
+            float_format="%.6f",
+        )
+
+        print("\nTabela salva em:", caminho_svm_ajuste)
+
+# Nomes explícitos para uso nos próximos blocos.
+busca_svm_linear = buscas_svm["linear"]
+busca_svm_rbf = buscas_svm["rbf"]
+
+melhor_pipeline_svm_linear = melhores_pipelines_svm["linear"]
+melhor_pipeline_svm_rbf = melhores_pipelines_svm["rbf"]
+
+tabela_svm_linear_ajustado_resumo = (
+    tabelas_svm_ajustadas_resumo["linear"]
+)
+tabela_svm_rbf_ajustado_resumo = (
+    tabelas_svm_ajustadas_resumo["rbf"]
+)
+
+tabela_svm_linear_ajustado_tempos = (
+    tabelas_svm_ajustadas_tempos["linear"]
+)
+tabela_svm_rbf_ajustado_tempos = (
+    tabelas_svm_ajustadas_tempos["rbf"]
+)
+
+comparacao_svm_linear_ajuste = comparacoes_svm_ajuste["linear"]
+comparacao_svm_rbf_ajuste = comparacoes_svm_ajuste["rbf"]
+
+print("\nOs desvios padrão dos resumos usam ddof=1.")
+print(
+    "Os arquivos busca_completa preservam o cv_results_ "
+    "original; os campos std_* seguem a convenção "
+    "do scikit-learn."
+)
+print(
+    "As posições das configurações são calculadas "
+    "separadamente para cada kernel."
+)
+print(
+    "As melhores médias foram selecionadas nas mesmas "
+    "divisões usadas na busca. Podem ser otimistas "
+    "e não constituem avaliação independente."
+)
+print(
+    "As diferenças em relação às configurações iniciais "
+    "são descritivas e não comprovam superioridade estatística."
+)
+print(
+    "Os dois melhores Pipelines estão ajustados em todo "
+    "o treino e disponíveis na memória desta execução."
+)
+print(
+    "Os modelos ainda não foram salvos em arquivo "
+    "nem escolhidos como vencedores entre todas as famílias."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 23 concluído.")
+
+# %% ==========================================================
+# BLOCO 24 — Ajuste do Gaussian Naive Bayes
+# =============================================================
+
+from time import perf_counter
+
+from sklearn.model_selection import GridSearchCV, ParameterGrid
+from sklearn.naive_bayes import GaussianNB
+
+print("\n" + "=" * 70)
+print("BLOCO 24 — AJUSTE DO GAUSSIAN NAIVE BAYES")
+print("=" * 70)
+
+# Mantém o mesmo Pipeline dos experimentos anteriores.
+# priors=None estima as probabilidades das classes no treino.
+#
+# var_smoothing adiciona às variâncias uma fração da maior
+# variância observada nas entradas transformadas.
+# A grade explora diferentes intensidades dessa estabilização.
+#
+# Esse ajuste não altera a hipótese de independência
+# condicional nem transforma indicadores em dados gaussianos.
+
+pipeline_nb_busca = criar_pipeline(
+    GaussianNB(
+        priors=None,
+    )
+)
+
+grade_nb = {
+    "modelo__var_smoothing": [
+        1e-12,
+        1e-11,
+        1e-10,
+        1e-9,
+        1e-8,
+        1e-7,
+        1e-6,
+        1e-5,
+        1e-4,
+        1e-3,
+        1e-2,
+        1e-1,
+        1.0,
+    ],
+}
+
+numero_configuracoes_nb = len(
+    list(ParameterGrid(grade_nb))
+)
+
+print("\nModelo: Gaussian Naive Bayes")
+print(
+    "Valores de var_smoothing:",
+    grade_nb["modelo__var_smoothing"],
+)
+print("Probabilidades das classes: estimadas no treino")
+print("Métrica de seleção:", METRICA_PRINCIPAL)
+print("Configurações:", numero_configuracoes_nb)
+print("Divisões por configuração:", len(divisoes_cv))
+print(
+    "Ajustes na validação cruzada:",
+    numero_configuracoes_nb * len(divisoes_cv),
+)
+print("Registros disponíveis no treino:", len(X_treino))
+
+print(
+    "\nO valor inicial var_smoothing=1e-9 "
+    "está incluído na busca."
+)
+print(
+    "O pré-processamento será aprendido dentro "
+    "de cada divisão da validação cruzada."
+)
+print(
+    "Após a seleção, o melhor Pipeline será ajustado "
+    "em todo o conjunto de treino."
+)
+print("\nIniciando busca. Aguarde a conclusão...")
+
+busca_nb = GridSearchCV(
+    estimator=pipeline_nb_busca,
+    param_grid=grade_nb,
+    scoring=metricas_cv,
+    refit=METRICA_PRINCIPAL,
+    cv=divisoes_cv,
+    return_train_score=True,
+    n_jobs=1,
+    verbose=2,
+    error_score="raise",
+)
+
+inicio_busca_nb = perf_counter()
+
+busca_nb.fit(
+    X_treino,
+    y_treino,
+)
+
+tempo_total_busca_nb = (
+    perf_counter() - inicio_busca_nb
+)
+
+# Pipeline selecionado e ajustado em todo o treino.
+melhor_pipeline_nb = busca_nb.best_estimator_
+
+indice_melhor_nb = busca_nb.best_index_
+resultados_grade_nb = busca_nb.cv_results_
+
+print("\nBusca concluída.")
+print("Parâmetros selecionados:", busca_nb.best_params_)
+print(
+    "F1 macro médio na validação:",
+    f"{busca_nb.best_score_:.4f}",
+)
+print(
+    "Tempo total da busca, incluindo ajuste final:",
+    f"{tempo_total_busca_nb:.2f} s",
+)
+print(
+    "Tempo do ajuste final em todo o treino:",
+    f"{busca_nb.refit_time_:.2f} s",
+)
+
+# Preserva todos os resultados originais da busca.
+tabela_nb_busca_completa = pd.DataFrame(
+    resultados_grade_nb
+)
+
+# Uma linha por configuração.
+linhas_grade_nb = []
+
+for indice, parametros in enumerate(
+    resultados_grade_nb["params"]
+):
+    linha = {
+        "Var smoothing": parametros["modelo__var_smoothing"],
+        "Posição por F1 macro": int(
+            resultados_grade_nb[
+                "rank_test_f1_macro"
+            ][indice]
+        ),
+        "Selecionada": indice == indice_melhor_nb,
+        "Tempo médio de ajuste (s)": resultados_grade_nb[
+            "mean_fit_time"
+        ][indice],
+        "Tempo médio de avaliação (s)": resultados_grade_nb[
+            "mean_score_time"
+        ][indice],
+    }
+
+    for nome_metrica in metricas_cv:
+        valores_treino = np.array([
+            resultados_grade_nb[
+                f"split{divisao}_train_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        valores_validacao = np.array([
+            resultados_grade_nb[
+                f"split{divisao}_test_{nome_metrica}"
+            ][indice]
+            for divisao in range(len(divisoes_cv))
+        ])
+
+        linha[f"Treino - {nome_metrica}"] = (
+            np.mean(valores_treino)
+        )
+        linha[f"Validação - {nome_metrica}"] = (
+            np.mean(valores_validacao)
+        )
+        linha[f"DP validação - {nome_metrica}"] = (
+            np.std(valores_validacao, ddof=1)
+        )
+
+    linha["Diferença F1 treino - validação (pp)"] = (
+        linha["Treino - f1_macro"]
+        - linha["Validação - f1_macro"]
+    ) * 100
+
+    linhas_grade_nb.append(linha)
+
+tabela_nb_grade = (
+    pd.DataFrame(linhas_grade_nb)
+    .sort_values(
+        by="Posição por F1 macro",
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+# Resumo da configuração selecionada.
+linhas_nb_ajustado_resumo = []
+
+for nome_metrica in metricas_cv:
+    valores_treino = np.array([
+        resultados_grade_nb[
+            f"split{divisao}_train_{nome_metrica}"
+        ][indice_melhor_nb]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    valores_validacao = np.array([
+        resultados_grade_nb[
+            f"split{divisao}_test_{nome_metrica}"
+        ][indice_melhor_nb]
+        for divisao in range(len(divisoes_cv))
+    ])
+
+    linhas_nb_ajustado_resumo.append({
+        "Modelo": "Gaussian Naive Bayes — ajustado",
+        "Métrica": nome_metrica,
+        "Média no treino": np.mean(valores_treino),
+        "Desvio padrão no treino": np.std(
+            valores_treino,
+            ddof=1,
+        ),
+        "Média na validação": np.mean(valores_validacao),
+        "Desvio padrão na validação": np.std(
+            valores_validacao,
+            ddof=1,
+        ),
+        "Diferença treino - validação": (
+            np.mean(valores_treino)
+            - np.mean(valores_validacao)
+        ),
+    })
+
+tabela_nb_ajustado_resumo = pd.DataFrame(
+    linhas_nb_ajustado_resumo
+)
+
+# Lê o resumo inicial já produzido pelo Bloco 17.
+# Não exige um nome específico para sua variável em memória.
+arquivo_nb_inicial_resumo = (
+    PASTA_RESULTADOS
+    / "nb_inicial_validacao_cruzada_resumo.csv"
+)
+
+if not arquivo_nb_inicial_resumo.is_file():
+    raise FileNotFoundError(
+        "Resumo inicial do Naive Bayes não encontrado: "
+        f"{arquivo_nb_inicial_resumo}"
+    )
+
+tabela_nb_inicial_para_comparacao = pd.read_csv(
+    arquivo_nb_inicial_resumo,
+    sep=";",
+    encoding="utf-8-sig",
+    decimal=",",
+)
+
+comparacao_nb_ajuste = (
+    tabela_nb_inicial_para_comparacao[
+        ["Métrica", "Média na validação"]
+    ]
+    .rename(columns={
+        "Média na validação": "Inicial - validação",
+    })
+    .merge(
+        tabela_nb_ajustado_resumo[
+            ["Métrica", "Média na validação"]
+        ].rename(columns={
+            "Média na validação": "Selecionada - validação",
+        }),
+        on="Métrica",
+        validate="one_to_one",
+    )
+)
+
+comparacao_nb_ajuste[
+    "Diferença selecionada - inicial (pp)"
+] = (
+    comparacao_nb_ajuste["Selecionada - validação"]
+    - comparacao_nb_ajuste["Inicial - validação"]
+) * 100
+
+tabela_nb_ajustado_tempos = pd.DataFrame([{
+    "Modelo": "Gaussian Naive Bayes — ajustado",
+    "Var smoothing selecionado": busca_nb.best_params_[
+        "modelo__var_smoothing"
+    ],
+    "Probabilidades das classes": "Estimadas no treino",
+    "Métrica de seleção": METRICA_PRINCIPAL,
+    "Configurações": numero_configuracoes_nb,
+    "Divisões": len(divisoes_cv),
+    "Tempo médio de ajuste (s)": resultados_grade_nb[
+        "mean_fit_time"
+    ][indice_melhor_nb],
+    "Tempo médio de avaliação (s)": resultados_grade_nb[
+        "mean_score_time"
+    ][indice_melhor_nb],
+    "Tempo do ajuste final no treino (s)": (
+        busca_nb.refit_time_
+    ),
+    "Tempo total da busca com ajuste final (s)": (
+        tempo_total_busca_nb
+    ),
+}])
+
+# Usa notação científica para não mostrar valores pequenos
+# de var_smoothing como zero na apresentação.
+tabela_nb_grade_exibicao = tabela_nb_grade.copy()
+tabela_nb_grade_exibicao["Var smoothing"] = (
+    tabela_nb_grade_exibicao["Var smoothing"]
+    .map(lambda valor: f"{valor:.1e}")
+)
+
+tabela_nb_tempos_exibicao = tabela_nb_ajustado_tempos.copy()
+tabela_nb_tempos_exibicao["Var smoothing selecionado"] = (
+    tabela_nb_tempos_exibicao["Var smoothing selecionado"]
+    .map(lambda valor: f"{valor:.1e}")
+)
+
+print("\nConfigurações ordenadas pelo F1 macro:")
+print(
+    tabela_nb_grade_exibicao.round(4).to_string(index=False)
+)
+
+print("\nResumo da configuração selecionada:")
+print(
+    tabela_nb_ajustado_resumo.round(4).to_string(index=False)
+)
+
+print("\nComparação com a configuração inicial:")
+print(
+    comparacao_nb_ajuste.round(4).to_string(index=False)
+)
+
+print("\nParâmetros e tempos:")
+print(
+    tabela_nb_tempos_exibicao.round(6).to_string(index=False)
+)
+
+# Usa 12 algarismos significativos para preservar os valores
+# pequenos de var_smoothing nos CSVs.
+# Mantém separador, codificação e decimal do projeto.
+for tabela, nome_arquivo in [
+    (
+        tabela_nb_busca_completa,
+        "nb_ajuste_busca_completa.csv",
+    ),
+    (
+        tabela_nb_grade,
+        "nb_ajuste_configuracoes.csv",
+    ),
+    (
+        tabela_nb_ajustado_resumo,
+        "nb_ajustado_validacao_cruzada_resumo.csv",
+    ),
+    (
+        tabela_nb_ajustado_tempos,
+        "nb_ajustado_tempos_parametros.csv",
+    ),
+    (
+        comparacao_nb_ajuste,
+        "comparacao_nb_inicial_ajustado.csv",
+    ),
+]:
+    caminho_nb_ajuste = PASTA_RESULTADOS / nome_arquivo
+
+    tabela.to_csv(
+        caminho_nb_ajuste,
+        index=False,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        float_format="%.12g",
+    )
+
+    print("\nTabela salva em:", caminho_nb_ajuste)
+
+print("\nOs desvios padrão dos resumos usam ddof=1.")
+print(
+    "O arquivo busca_completa preserva o cv_results_ "
+    "original; os campos std_* seguem a convenção "
+    "do scikit-learn."
+)
+print(
+    "A busca varia somente var_smoothing e mantém "
+    "o pré-processamento comum dos experimentos."
+)
+print(
+    "A estabilização das variâncias não elimina "
+    "as limitações das hipóteses do Gaussian Naive Bayes."
+)
+print(
+    "A melhor média foi selecionada nas mesmas divisões "
+    "usadas na busca. Pode ser otimista e não constitui "
+    "uma avaliação independente."
+)
+print(
+    "A diferença em relação à configuração inicial "
+    "é descritiva; não comprova superioridade estatística."
+)
+print(
+    "melhor_pipeline_nb está ajustado em todo o treino "
+    "e disponível na memória desta execução."
+)
+print(
+    "O modelo ainda não foi salvo em arquivo nem escolhido "
+    "como vencedor entre todas as famílias."
+)
+
+print("\nO conjunto de teste reservado não foi utilizado.")
+print("\nBloco 24 concluído.")
+
 

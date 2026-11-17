@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+Gaussian Naive Bayes — ajustado;acuracia;0,696947783909;0,00695484988616;0,682167387566;0,00841188012469;0,0147803963434
+Gaussian Naive Bayes — ajustado;precisao_macro;0,655483646001;0,00372256236311;0,635935469046;0,0106336205187;0,0195481769552
+Gaussian Naive Bayes — ajustado;recall_macro;0,638142165041;0,0065533983087;0,618706948973;0,0129884119023;0,019435216067
+Gaussian Naive Bayes — ajustado;f1_macro;0,64090905511;0,00392790652293;0,621938071998;0,0114917895038;0,0189709831128

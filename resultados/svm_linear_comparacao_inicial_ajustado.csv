@@ -1,0 +1,5 @@
+﻿Métrica;Inicial - validação;Selecionada - validação;Diferença selecionada - inicial (pp)
+acuracia;0,767436;0,746446;-2,099015
+precisao_macro;0,718301;0,703545;-1,475623
+recall_macro;0,684525;0,707091;2,256602
+f1_macro;0,693927;0,701607;0,767917

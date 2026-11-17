@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+SVM linear — ajustado;acuracia;0,805717;0,003046;0,746446;0,008512;0,059271
+SVM linear — ajustado;precisao_macro;0,775455;0,003718;0,703545;0,007080;0,071910
+SVM linear — ajustado;recall_macro;0,790131;0,004418;0,707091;0,010469;0,083039
+SVM linear — ajustado;f1_macro;0,775993;0,003850;0,701607;0,009329;0,074387

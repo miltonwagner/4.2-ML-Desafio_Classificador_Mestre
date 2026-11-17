@@ -1,0 +1,5 @@
+﻿Modelo;Métrica;Média no treino;Desvio padrão no treino;Média na validação;Desvio padrão na validação;Diferença treino - validação
+SVM RBF — ajustado;acuracia;0,854490;0,004663;0,750967;0,011146;0,103522
+SVM RBF — ajustado;precisao_macro;0,830742;0,004385;0,711316;0,009396;0,119426
+SVM RBF — ajustado;recall_macro;0,848673;0,003770;0,713077;0,011277;0,135597
+SVM RBF — ajustado;f1_macro;0,832211;0,004657;0,707133;0,011105;0,125078

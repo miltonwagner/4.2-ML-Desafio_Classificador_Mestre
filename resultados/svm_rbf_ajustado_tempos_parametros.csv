@@ -1,0 +1,2 @@
+﻿Modelo;Kernel;C selecionado;Gamma selecionado;Peso das classes;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
+SVM RBF — ajustado;rbf;10,000000;0,010000;balanced;f1_macro;18;5;1,549185;0,482232;2,435048;421,958328

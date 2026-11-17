@@ -1,2 +1,2 @@
 ﻿Modelo;Profundidade máxima selecionada;Mínimo por folha selecionado;Peso das classes;Profundidade no ajuste final;Folhas no ajuste final;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
-Árvore de Decisão — ajustada;10;30;balanced;10;73;f1_macro;32;5;0,106090;0,065458;0,131351;46,004104
+Árvore de Decisão — ajustada;10;30;balanced;10;73;f1_macro;32;5;0,102101;0,062978;0,142033;46,928241
