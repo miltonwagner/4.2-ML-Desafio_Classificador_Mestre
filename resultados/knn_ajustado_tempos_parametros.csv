@@ -1,2 +1,2 @@
 ﻿Modelo;Vizinhos selecionados;Pesos selecionados;p selecionado;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
-KNN — ajustado;5;uniform;1;f1_macro;24;5;0,052139;0,514062;0,054338;138,324252
+KNN — ajustado;5;uniform;1;f1_macro;24;5;0,056359;0,528340;0,055156;137,549313

@@ -1,2 +1,2 @@
 ﻿Modelo;Kernel;C selecionado;Gamma selecionado;Peso das classes;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
-SVM linear — ajustado;linear;1,000000;Não se aplica;balanced;f1_macro;8;5;1,824688;0,238400;2,818212;165,323259
+SVM linear — ajustado;linear;1,000000;Não se aplica;balanced;f1_macro;8;5;1,835964;0,238707;2,808690;165,928865

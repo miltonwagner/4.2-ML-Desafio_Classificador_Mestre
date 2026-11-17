@@ -1,2 +1,2 @@
 ﻿Modelo;Var smoothing selecionado;Probabilidades das classes;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
-Gaussian Naive Bayes — ajustado;0,1;Estimadas no treino;f1_macro;13;5;0,0887722492218;0,0962415218353;0,0769913196564;23,2953172
+Gaussian Naive Bayes — ajustado;0,1;Estimadas no treino;f1_macro;13;5;0,0785067081451;0,0705044269562;0,0769996643066;19,2349784998

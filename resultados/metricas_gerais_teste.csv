@@ -1,0 +1,8 @@
+﻿Modelo;Papel;Acurácia teste;Precisão macro teste;Recall macro teste;F1 macro teste;Registros
+Regressão Logística;Principal;0,745482;0,714837;0,719703;0,708007;1328
+KNN;Comparação;0,679970;0,599585;0,577632;0,581393;1328
+Árvore;Comparação;0,705572;0,669439;0,675121;0,666316;1328
+Random Forest;Comparação;0,776355;0,728423;0,721505;0,724203;1328
+SVM linear;Comparação;0,735693;0,703790;0,707374;0,696965;1328
+SVM RBF;Comparação;0,749247;0,717032;0,723884;0,712475;1328
+Gaussian Naive Bayes;Comparação;0,679217;0,630292;0,613277;0,615307;1328

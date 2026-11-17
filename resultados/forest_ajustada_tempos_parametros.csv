@@ -1,2 +1,2 @@
 ﻿Modelo;Quantidade de árvores;Profundidade máxima selecionada;Mínimo por folha selecionado;Peso das classes;Métrica de seleção;Configurações;Divisões;Tempo médio de ajuste (s);Tempo médio de avaliação (s);Tempo do ajuste final no treino (s);Tempo total da busca com ajuste final (s)
-Random Forest — ajustada;200;Sem limite;1;balanced;f1_macro;18;5;2,113210;0,135888;2,623402;172,065939
+Random Forest — ajustada;200;Sem limite;1;balanced;f1_macro;18;5;2,130984;0,136723;2,645434;166,829327

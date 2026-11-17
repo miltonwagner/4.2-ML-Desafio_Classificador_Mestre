@@ -6280,4 +6280,1037 @@ print(
 print("\nO conjunto de teste reservado não foi utilizado.")
 print("\nBloco 24 concluído.")
 
+# ============================================================
+# BLOCO 25 — CONSOLIDAÇÃO DOS RESULTADOS
+# ============================================================
+# Utiliza somente os CSVs de validação cruzada já produzidos.
+# Não treina modelos nem acessa o conjunto de teste reservado.
+
+print("\n" + "=" * 70)
+print("BLOCO 25 — CONSOLIDAÇÃO DOS RESULTADOS")
+print("=" * 70)
+
+modelos_bloco25 = [
+    ("Regressão Logística", "logistica_inicial", "logistica_ajustada"),
+    ("KNN", "knn_inicial", "knn_ajustado"),
+    ("Árvore", "arvore_inicial", "arvore_ajustada"),
+    ("Random Forest", "forest_inicial", "forest_ajustada"),
+    ("SVM linear", "svm_linear_inicial", "svm_linear_ajustado"),
+    ("SVM RBF", "svm_rbf_inicial", "svm_rbf_ajustado"),
+    ("Gaussian Naive Bayes", "nb_inicial", "nb_ajustado"),
+]
+
+metricas_bloco25 = [
+    "acuracia",
+    "precisao_macro",
+    "recall_macro",
+    "f1_macro",
+]
+
+
+def ler_resumo_bloco25(prefixo):
+    caminho = (
+        PASTA_RESULTADOS
+        / f"{prefixo}_validacao_cruzada_resumo.csv"
+    )
+
+    tabela = pd.read_csv(
+        caminho,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+    )
+
+    colunas = [
+        "Métrica",
+        "Média no treino",
+        "Desvio padrão no treino",
+        "Média na validação",
+        "Desvio padrão na validação",
+    ]
+
+    faltantes = set(colunas) - set(tabela.columns)
+    if faltantes:
+        raise ValueError(
+            f"Colunas ausentes em {caminho.name}: {faltantes}"
+        )
+
+    if tabela["Métrica"].duplicated().any():
+        raise ValueError(
+            f"Métricas duplicadas em {caminho.name}."
+        )
+
+    tabela = tabela.set_index("Métrica")
+
+    if set(tabela.index) != set(metricas_bloco25):
+        raise ValueError(
+            f"Métricas inesperadas em {caminho.name}."
+        )
+
+    numericas = colunas[1:]
+    tabela[numericas] = tabela[numericas].apply(
+        pd.to_numeric,
+        errors="raise",
+    )
+
+    if tabela[numericas].isna().any().any():
+        raise ValueError(
+            f"Valores ausentes em {caminho.name}."
+        )
+
+    if not tabela[numericas].apply(
+        lambda coluna: coluna.between(0, 1).all()
+    ).all():
+        raise ValueError(
+            f"Valores fora de 0 a 1 em {caminho.name}."
+        )
+
+    return tabela
+
+
+linhas_bloco25 = []
+
+for nome, prefixo_inicial, prefixo_ajustado in modelos_bloco25:
+    inicial = ler_resumo_bloco25(prefixo_inicial)
+    ajustado = ler_resumo_bloco25(prefixo_ajustado)
+
+    for metrica in metricas_bloco25:
+        valor_inicial = inicial.loc[metrica]
+        valor_ajustado = ajustado.loc[metrica]
+
+        linhas_bloco25.append({
+            "Modelo": nome,
+            "Métrica": metrica,
+            "Média treino inicial":
+                valor_inicial["Média no treino"],
+            "DP treino inicial":
+                valor_inicial["Desvio padrão no treino"],
+            "Média validação inicial":
+                valor_inicial["Média na validação"],
+            "DP validação inicial":
+                valor_inicial["Desvio padrão na validação"],
+            "Média treino ajustado":
+                valor_ajustado["Média no treino"],
+            "DP treino ajustado":
+                valor_ajustado["Desvio padrão no treino"],
+            "Média validação ajustado":
+                valor_ajustado["Média na validação"],
+            "DP validação ajustado":
+                valor_ajustado["Desvio padrão na validação"],
+            "Ganho validação (pp)": 100 * (
+                valor_ajustado["Média na validação"]
+                - valor_inicial["Média na validação"]
+            ),
+            "Diferença treino-validação inicial (pp)": 100 * (
+                valor_inicial["Média no treino"]
+                - valor_inicial["Média na validação"]
+            ),
+            "Diferença treino-validação ajustado (pp)": 100 * (
+                valor_ajustado["Média no treino"]
+                - valor_ajustado["Média na validação"]
+            ),
+        })
+
+tabela_consolidada_bloco25 = pd.DataFrame(linhas_bloco25)
+
+tabela_f1_bloco25 = (
+    tabela_consolidada_bloco25.loc[
+        tabela_consolidada_bloco25["Métrica"] == "f1_macro"
+    ]
+    .sort_values(
+        "Média validação ajustado",
+        ascending=False,
+        kind="stable",
+    )
+    .reset_index(drop=True)
+)
+
+arquivo_consolidado_bloco25 = (
+    PASTA_RESULTADOS
+    / "comparacao_iniciais_ajustados_consolidada.csv"
+)
+arquivo_f1_bloco25 = (
+    PASTA_RESULTADOS
+    / "comparacao_iniciais_ajustados_f1_macro.csv"
+)
+arquivo_figura_bloco25 = (
+    PASTA_RESULTADOS
+    / "figura_05_comparacao_iniciais_ajustados.png"
+)
+
+for tabela, destino in [
+    (tabela_consolidada_bloco25, arquivo_consolidado_bloco25),
+    (tabela_f1_bloco25, arquivo_f1_bloco25),
+]:
+    tabela.to_csv(
+        destino,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        index=False,
+        float_format="%.6f",
+    )
+
+print("\nComparação pelo F1 macro:")
+print(
+    tabela_f1_bloco25[[
+        "Modelo",
+        "Média validação inicial",
+        "Média validação ajustado",
+        "DP validação ajustado",
+        "Ganho validação (pp)",
+        "Diferença treino-validação ajustado (pp)",
+    ]].to_string(
+        index=False,
+        float_format=lambda valor: f"{valor:.4f}",
+    )
+)
+
+dummy_bloco25 = ler_resumo_bloco25("dummy")
+f1_dummy_bloco25 = dummy_bloco25.loc[
+    "f1_macro", "Média na validação"
+]
+
+figura_bloco25, eixo_bloco25 = plt.subplots(
+    figsize=(12, 7)
+)
+
+posicoes_bloco25 = list(range(len(tabela_f1_bloco25)))
+deslocamento_bloco25 = 0.16
+
+eixo_bloco25.errorbar(
+    tabela_f1_bloco25["Média validação inicial"],
+    [posicao - deslocamento_bloco25
+     for posicao in posicoes_bloco25],
+    xerr=tabela_f1_bloco25["DP validação inicial"],
+    fmt="o",
+    color="#64748b",
+    capsize=4,
+    label="Inicial: validação ± 1 DP",
+)
+
+eixo_bloco25.errorbar(
+    tabela_f1_bloco25["Média validação ajustado"],
+    [posicao + deslocamento_bloco25
+     for posicao in posicoes_bloco25],
+    xerr=tabela_f1_bloco25["DP validação ajustado"],
+    fmt="o",
+    color="#2563eb",
+    capsize=4,
+    label="Ajustado: validação ± 1 DP",
+)
+
+eixo_bloco25.scatter(
+    tabela_f1_bloco25["Média treino ajustado"],
+    [posicao + deslocamento_bloco25
+     for posicao in posicoes_bloco25],
+    marker="D",
+    color="#d97706",
+    s=35,
+    label="Ajustado: média no treino",
+    zorder=3,
+)
+
+eixo_bloco25.axvline(
+    f1_dummy_bloco25,
+    color="#9333ea",
+    linestyle="--",
+    linewidth=1.3,
+    label=f"Dummy: F1 validação = {f1_dummy_bloco25:.4f}",
+)
+
+eixo_bloco25.set_yticks(posicoes_bloco25)
+eixo_bloco25.set_yticklabels(tabela_f1_bloco25["Modelo"])
+eixo_bloco25.invert_yaxis()
+eixo_bloco25.set_xlim(0, 1.03)
+eixo_bloco25.set_xlabel("F1 macro")
+eixo_bloco25.set_title(
+    "Figura 5 — Configurações iniciais e ajustadas\n"
+    "Ordenação pela média de validação dos ajustados"
+)
+eixo_bloco25.grid(axis="x", alpha=0.25)
+eixo_bloco25.legend(
+    loc="upper center",
+    bbox_to_anchor=(0.5, -0.13),
+    ncol=2,
+    frameon=False,
+)
+
+figura_bloco25.text(
+    0.5,
+    0.02,
+    "Barras: ± 1 desvio padrão entre divisões; "
+    "não são intervalos de confiança.\n"
+    "A seleção usou as mesmas divisões: "
+    "os resultados ajustados podem ser otimistas.",
+    ha="center",
+    fontsize=9,
+)
+
+figura_bloco25.tight_layout(rect=(0, 0.16, 1, 1))
+figura_bloco25.savefig(
+    arquivo_figura_bloco25,
+    dpi=300,
+    bbox_inches="tight",
+)
+
+print("\nArquivos gerados:")
+print(arquivo_consolidado_bloco25)
+print(arquivo_f1_bloco25)
+print(arquivo_figura_bloco25)
+
+print(
+    "\nAs diferenças são descritivas e não comprovam "
+    "superioridade estatística."
+)
+print(
+    "Os valores foram lidos dos CSVs e podem apresentar "
+    "pequenas diferenças decorrentes do arredondamento."
+)
+print(
+    "Esta consolidação não escolhe automaticamente "
+    "o modelo final."
+)
+print(
+    "Nenhuma busca foi repetida neste bloco. "
+    "O conjunto de teste reservado não foi utilizado."
+)
+
+plt.show()
+plt.close(figura_bloco25)
+
+print("\nBloco 25 concluído.")
+
+# ============================================================
+# BLOCO 26 — ANÁLISE DOS ERROS POR CLASSE NA VALIDAÇÃO
+# ============================================================
+# Análise descritiva com os parâmetros selecionados anteriormente.
+# Não utiliza o conjunto de teste reservado.
+# Não realiza novas buscas de hiperparâmetros.
+
+from sklearn.base import clone
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
+from time import perf_counter
+import numpy as np
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+print("\n" + "=" * 70)
+print("BLOCO 26 — ANÁLISE DOS ERROS POR CLASSE")
+print("=" * 70)
+
+modelos_bloco26 = [
+    ("logistica", "Regressão Logística", melhor_pipeline_logistica),
+    ("knn", "KNN", melhor_pipeline_knn),
+    ("arvore", "Árvore", melhor_pipeline_arvore),
+    ("forest", "Random Forest", melhor_pipeline_forest),
+    ("svm_linear", "SVM linear", melhor_pipeline_svm_linear),
+    ("svm_rbf", "SVM RBF", melhor_pipeline_svm_rbf),
+    ("nb", "Gaussian Naive Bayes", melhor_pipeline_nb),
+]
+
+if not X_treino.index.equals(y_treino.index):
+    raise ValueError("Os índices de X_treino e y_treino diferem.")
+
+if set(y_treino.unique()) != set(ordem_classes):
+    raise ValueError("As classes do treino diferem da ordem esperada.")
+
+# Confere se cada registro participa uma vez da validação.
+cobertura_bloco26 = np.zeros(len(y_treino), dtype=int)
+
+for treino_pos, validacao_pos in divisoes_cv:
+    if np.intersect1d(treino_pos, validacao_pos).size:
+        raise ValueError("Há sobreposição dentro de uma divisão.")
+
+    np.add.at(cobertura_bloco26, validacao_pos, 1)
+
+if not np.all(cobertura_bloco26 == 1):
+    raise ValueError(
+        "Cada registro deve aparecer exatamente uma vez na validação."
+    )
+
+metricas_classe_bloco26 = []
+metricas_agregadas_bloco26 = []
+tempos_bloco26 = []
+matrizes_bloco26 = {}
+previsoes_bloco26 = {}
+
+inicio_bloco26 = perf_counter()
+
+for identificador, nome, pipeline in modelos_bloco26:
+    print(f"\nModelo: {nome}")
+    inicio_modelo = perf_counter()
+
+    previsoes = np.empty(len(y_treino), dtype=object)
+    numero_divisao = np.zeros(len(y_treino), dtype=int)
+
+    for divisao, (treino_pos, validacao_pos) in enumerate(
+        divisoes_cv, start=1
+    ):
+        print(
+            f"  Divisão {divisao}/{len(divisoes_cv)}...",
+            flush=True,
+        )
+
+        # clone remove o estado treinado e preserva os parâmetros.
+        # O pré-processamento também é reaprendido nesta divisão.
+        pipeline_divisao = clone(pipeline)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ConvergenceWarning)
+
+            pipeline_divisao.fit(
+                X_treino.iloc[treino_pos],
+                y_treino.iloc[treino_pos],
+            )
+
+            previsoes[validacao_pos] = pipeline_divisao.predict(
+                X_treino.iloc[validacao_pos]
+            )
+
+        numero_divisao[validacao_pos] = divisao
+
+    if not set(previsoes).issubset(set(ordem_classes)):
+        raise ValueError(f"Previsões inesperadas para {nome}.")
+
+    relatorio = classification_report(
+        y_treino,
+        previsoes,
+        labels=ordem_classes,
+        output_dict=True,
+        zero_division=0,
+    )
+
+    for classe in ordem_classes:
+        resultado = relatorio[classe]
+
+        metricas_classe_bloco26.append({
+            "Modelo": nome,
+            "Classe": classe,
+            "Precisão": resultado["precision"],
+            "Recall": resultado["recall"],
+            "F1": resultado["f1-score"],
+            "Suporte": int(resultado["support"]),
+        })
+
+    metricas_agregadas_bloco26.append({
+        "Modelo": nome,
+        "Acurácia OOF agregada": relatorio["accuracy"],
+        "Precisão macro OOF agregada":
+            relatorio["macro avg"]["precision"],
+        "Recall macro OOF agregado":
+            relatorio["macro avg"]["recall"],
+        "F1 macro OOF agregado":
+            relatorio["macro avg"]["f1-score"],
+        "Registros": len(y_treino),
+    })
+
+    matriz = confusion_matrix(
+        y_treino,
+        previsoes,
+        labels=ordem_classes,
+    )
+
+    if matriz.sum() != len(y_treino):
+        raise ValueError(f"Contagem inconsistente para {nome}.")
+
+    matriz_percentual = (
+        matriz / matriz.sum(axis=1, keepdims=True) * 100
+    )
+
+    matrizes_bloco26[identificador] = matriz
+    previsoes_bloco26[identificador] = previsoes.copy()
+
+    tabela_previsoes = pd.DataFrame({
+        "Indice_original": y_treino.index,
+        "Divisao_validacao": numero_divisao,
+        "Classe_real": y_treino.to_numpy(),
+        "Classe_prevista": previsoes,
+        "Acertou": y_treino.to_numpy() == previsoes,
+    })
+
+    tabela_matriz = pd.DataFrame(
+        matriz,
+        index=pd.Index(ordem_classes, name="Classe real"),
+        columns=pd.Index(ordem_classes, name="Classe prevista"),
+    )
+
+    tabela_percentual = pd.DataFrame(
+        matriz_percentual,
+        index=pd.Index(ordem_classes, name="Classe real"),
+        columns=pd.Index(ordem_classes, name="Classe prevista"),
+    )
+
+    for tabela, sufixo, salvar_indice in [
+        (tabela_previsoes, "previsoes_oof", False),
+        (tabela_matriz, "matriz_confusao_oof", True),
+        (tabela_percentual, "matriz_confusao_oof_percentual", True),
+    ]:
+        tabela.to_csv(
+            PASTA_RESULTADOS / f"{identificador}_{sufixo}.csv",
+            sep=";",
+            encoding="utf-8-sig",
+            decimal=",",
+            index=salvar_indice,
+            float_format="%.6f",
+        )
+
+    tempos_bloco26.append({
+        "Modelo": nome,
+        "Divisões": len(divisoes_cv),
+        "Tempo OOF total (s)": perf_counter() - inicio_modelo,
+    })
+
+    print(f"  Previsões de validação concluídas: {len(previsoes)}")
+
+tabela_classes_bloco26 = pd.DataFrame(metricas_classe_bloco26)
+tabela_agregada_bloco26 = pd.DataFrame(metricas_agregadas_bloco26)
+tabela_tempos_bloco26 = pd.DataFrame(tempos_bloco26)
+
+for tabela, arquivo in [
+    (
+        tabela_classes_bloco26,
+        "metricas_por_classe_validacao_oof.csv",
+    ),
+    (
+        tabela_agregada_bloco26,
+        "metricas_agregadas_validacao_oof.csv",
+    ),
+    (
+        tabela_tempos_bloco26,
+        "tempos_validacao_oof.csv",
+    ),
+]:
+    tabela.to_csv(
+        PASTA_RESULTADOS / arquivo,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        index=False,
+        float_format="%.6f",
+    )
+
+print("\nMétricas por classe — previsões de validação reunidas:")
+print(
+    tabela_classes_bloco26.to_string(
+        index=False,
+        float_format=lambda valor: f"{valor:.4f}",
+    )
+)
+
+print("\nMétricas agregadas das previsões de validação:")
+print(
+    tabela_agregada_bloco26.to_string(
+        index=False,
+        float_format=lambda valor: f"{valor:.4f}",
+    )
+)
+
+# Figura 6 — Matrizes com espaçamento e rótulos legíveis.
+figura_bloco26, eixos_bloco26 = plt.subplots(
+    3, 3,
+    figsize=(16, 16),
+)
+
+figura_bloco26.canvas.manager.set_window_title(
+    "Figura 6 — Matrizes de confusão"
+)
+
+for eixo, (identificador, nome, _) in zip(
+    eixos_bloco26.flat, modelos_bloco26
+):
+    matriz = matrizes_bloco26[identificador]
+    matriz_proporcao = (
+        matriz / matriz.sum(axis=1, keepdims=True)
+    )
+
+    exibicao = ConfusionMatrixDisplay(
+        confusion_matrix=matriz_proporcao,
+        display_labels=ordem_classes,
+    )
+
+    exibicao.plot(
+        ax=eixo,
+        cmap="Blues",
+        values_format=".1%",
+        colorbar=False,
+        im_kw={"vmin": 0, "vmax": 1},
+    )
+
+    eixo.set_title(nome, fontsize=12, pad=14)
+    eixo.set_xlabel("Classe prevista", fontsize=10, labelpad=8)
+    eixo.set_ylabel("Classe real", fontsize=10, labelpad=8)
+
+    plt.setp(
+        eixo.get_xticklabels(),
+        rotation=30,
+        ha="right",
+        rotation_mode="anchor",
+        fontsize=10,
+    )
+    eixo.tick_params(axis="y", labelsize=10)
+
+    for texto in exibicao.text_.flat:
+        texto.set_fontsize(10)
+
+for eixo in list(eixos_bloco26.flat)[len(modelos_bloco26):]:
+    eixo.axis("off")
+
+figura_bloco26.suptitle(
+    "Figura 6 — Matrizes de confusão na validação\n"
+    "Configurações ajustadas — percentuais por classe real",
+    fontsize=16,
+    y=0.97,
+)
+
+# Espaço explícito entre linhas para acomodar os rótulos.
+figura_bloco26.subplots_adjust(
+    left=0.09,
+    right=0.97,
+    top=0.89,
+    bottom=0.12,
+    wspace=0.55,
+    hspace=0.85,
+)
+
+figura_bloco26.text(
+    0.5,
+    0.035,
+    "Cada linha soma 100%. Diagonal: acertos; demais células: erros.\n"
+    "Parâmetros selecionados nas mesmas divisões: "
+    "análise descritiva sujeita ao viés de seleção.",
+    ha="center",
+    va="bottom",
+    fontsize=10,
+)
+
+arquivo_figura_bloco26 = (
+    PASTA_RESULTADOS
+    / "figura_06_matrizes_confusao_validacao_oof.png"
+)
+
+figura_bloco26.savefig(
+    arquivo_figura_bloco26,
+    dpi=300,
+    bbox_inches="tight",
+)
+
+print("\nResultados salvos em:", PASTA_RESULTADOS)
+print("Figura salva:", arquivo_figura_bloco26)
+print(
+    "\nOOF significa previsão fora da divisão usada no ajuste."
+)
+print(
+    "As métricas agregadas reúnem todas as previsões OOF; "
+    "podem diferir da média das cinco métricas do Bloco 25."
+)
+print(
+    "A seleção dos parâmetros utilizou essas mesmas divisões. "
+    "Esta análise não é uma avaliação independente."
+)
+print(
+    "Não houve nova busca de parâmetros neste bloco "
+    "nem alteração dos pipelines selecionados."
+)
+print("O conjunto de teste reservado não foi utilizado.")
+print(
+    f"Tempo total do Bloco 26: "
+    f"{perf_counter() - inicio_bloco26:.2f} segundos."
+)
+
+plt.show()
+plt.close(figura_bloco26)
+
+print("\nBloco 26 concluído.")
+
+# ============================================================
+# BLOCO 27 — ESCOLHA REGISTRADA E AVALIAÇÃO FINAL NO TESTE
+# ============================================================
+# Modelo principal escolhido pela validação: Regressão Logística.
+# Os demais modelos entram como comparação acadêmica.
+# Não alterar parâmetros ou escolha com base no resultado do teste.
+
+import json
+from datetime import datetime, timezone
+from sklearn.utils.validation import check_is_fitted
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
+
+print("\n" + "=" * 70)
+print("BLOCO 27 — AVALIAÇÃO FINAL NO TESTE RESERVADO")
+print("=" * 70)
+
+modelos_bloco27 = [
+    ("logistica", "Regressão Logística", melhor_pipeline_logistica),
+    ("knn", "KNN", melhor_pipeline_knn),
+    ("arvore", "Árvore", melhor_pipeline_arvore),
+    ("forest", "Random Forest", melhor_pipeline_forest),
+    ("svm_linear", "SVM linear", melhor_pipeline_svm_linear),
+    ("svm_rbf", "SVM RBF", melhor_pipeline_svm_rbf),
+    ("nb", "Gaussian Naive Bayes", melhor_pipeline_nb),
+]
+
+# Verificações estruturais antes de calcular métricas.
+if not X_teste.index.equals(y_teste.index):
+    raise ValueError("Os índices de X_teste e y_teste diferem.")
+
+if not X_treino.columns.equals(X_teste.columns):
+    raise ValueError("As colunas de treino e teste diferem.")
+
+if not X_treino.index.intersection(X_teste.index).empty:
+    raise ValueError("Há índices compartilhados entre treino e teste.")
+
+for identificador, nome, pipeline in modelos_bloco27:
+    check_is_fitted(pipeline.named_steps["preprocessamento"])
+    check_is_fitted(pipeline.named_steps["modelo"])
+
+# Registra a decisão ANTES de gerar previsões no teste.
+# Um registro existente deve concordar com a decisão atual.
+decisao_bloco27 = {
+    "modelo_principal": "logistica",
+    "nome_modelo_principal": "Regressão Logística",
+    "criterio": "Maior média de F1 macro na validação cruzada",
+    "origem_criterio": "Bloco 25",
+    "modelos_comparados": [
+        identificador
+        for identificador, _, _ in modelos_bloco27
+    ],
+    "parametros_modelos": {
+        identificador: pipeline.named_steps["modelo"].get_params(
+            deep=False
+        )
+        for identificador, _, pipeline in modelos_bloco27
+    },
+    "regra": (
+        "Não reajustar parâmetros nem trocar o modelo principal "
+        "com base nos resultados do teste."
+    ),
+}
+
+# Converte tipos numéricos de bibliotecas para tipos JSON.
+decisao_bloco27 = json.loads(
+    json.dumps(
+        decisao_bloco27,
+        ensure_ascii=False,
+        default=str,
+    )
+)
+
+arquivo_decisao_bloco27 = (
+    PASTA_RESULTADOS / "decisao_modelos_antes_teste.json"
+)
+
+if arquivo_decisao_bloco27.exists():
+    with arquivo_decisao_bloco27.open(
+        "r", encoding="utf-8"
+    ) as arquivo:
+        registro_anterior_bloco27 = json.load(arquivo)
+
+    for chave, valor in decisao_bloco27.items():
+        if registro_anterior_bloco27.get(chave) != valor:
+            raise ValueError(
+                "A decisão ou os parâmetros diferem do registro "
+                "anterior. Interrompido antes das previsões."
+            )
+
+    print("\nRegistro de decisão anterior preservado.")
+else:
+    registro_bloco27 = {
+        **decisao_bloco27,
+        "registrado_em_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+    }
+
+    with arquivo_decisao_bloco27.open(
+        "x", encoding="utf-8"
+    ) as arquivo:
+        json.dump(
+            registro_bloco27,
+            arquivo,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    print("\nDecisão registrada antes das previsões.")
+
+print("Modelo principal: Regressão Logística.")
+print("Critério: maior média de F1 macro na validação.")
+print("Registro:", arquivo_decisao_bloco27)
+
+if set(y_teste.unique()) != set(ordem_classes):
+    raise ValueError("As classes do teste diferem das esperadas.")
+
+metricas_gerais_bloco27 = []
+metricas_classes_bloco27 = []
+matrizes_bloco27 = {}
+previsoes_bloco27 = {}
+
+for identificador, nome, pipeline in modelos_bloco27:
+    print(f"\nAvaliando no teste: {nome}", flush=True)
+
+    # best_estimator_ foi ajustado em todo o treino nas buscas.
+    # Aqui apenas prevemos: não há fit nem fit_transform.
+    previsoes = pipeline.predict(X_teste)
+
+    if len(previsoes) != len(y_teste):
+        raise ValueError(f"Quantidade incorreta de previsões: {nome}.")
+
+    if not set(previsoes).issubset(set(ordem_classes)):
+        raise ValueError(f"Classes previstas inesperadas: {nome}.")
+
+    relatorio = classification_report(
+        y_teste,
+        previsoes,
+        labels=ordem_classes,
+        output_dict=True,
+        zero_division=0,
+    )
+
+    metricas_gerais_bloco27.append({
+        "Modelo": nome,
+        "Papel": (
+            "Principal"
+            if identificador == "logistica"
+            else "Comparação"
+        ),
+        "Acurácia teste": accuracy_score(y_teste, previsoes),
+        "Precisão macro teste":
+            relatorio["macro avg"]["precision"],
+        "Recall macro teste":
+            relatorio["macro avg"]["recall"],
+        "F1 macro teste":
+            relatorio["macro avg"]["f1-score"],
+        "Registros": len(y_teste),
+    })
+
+    for classe in ordem_classes:
+        resultado = relatorio[classe]
+
+        metricas_classes_bloco27.append({
+            "Modelo": nome,
+            "Classe": classe,
+            "Precisão teste": resultado["precision"],
+            "Recall teste": resultado["recall"],
+            "F1 teste": resultado["f1-score"],
+            "Suporte": int(resultado["support"]),
+        })
+
+    matriz = confusion_matrix(
+        y_teste,
+        previsoes,
+        labels=ordem_classes,
+    )
+
+    if matriz.sum() != len(y_teste):
+        raise ValueError(f"Contagem inconsistente: {nome}.")
+
+    matriz_percentual = (
+        matriz / matriz.sum(axis=1, keepdims=True) * 100
+    )
+
+    matrizes_bloco27[identificador] = matriz
+    previsoes_bloco27[identificador] = previsoes.copy()
+
+    tabela_previsoes = pd.DataFrame({
+        "Indice_original": y_teste.index,
+        "Classe_real": y_teste.to_numpy(),
+        "Classe_prevista": previsoes,
+        "Acertou": y_teste.to_numpy() == previsoes,
+    })
+
+    tabela_matriz = pd.DataFrame(
+        matriz,
+        index=pd.Index(ordem_classes, name="Classe real"),
+        columns=pd.Index(ordem_classes, name="Classe prevista"),
+    )
+
+    tabela_percentual = pd.DataFrame(
+        matriz_percentual,
+        index=pd.Index(ordem_classes, name="Classe real"),
+        columns=pd.Index(ordem_classes, name="Classe prevista"),
+    )
+
+    for tabela, sufixo, salvar_indice in [
+        (tabela_previsoes, "previsoes_teste", False),
+        (tabela_matriz, "matriz_confusao_teste", True),
+        (tabela_percentual, "matriz_confusao_teste_percentual", True),
+    ]:
+        tabela.to_csv(
+            PASTA_RESULTADOS / f"{identificador}_{sufixo}.csv",
+            sep=";",
+            encoding="utf-8-sig",
+            decimal=",",
+            index=salvar_indice,
+            float_format="%.6f",
+        )
+
+tabela_geral_bloco27 = pd.DataFrame(metricas_gerais_bloco27)
+tabela_classes_bloco27 = pd.DataFrame(metricas_classes_bloco27)
+
+# Mantém a ordem definida antes do teste, sem escolher pelo teste.
+for tabela, nome_arquivo in [
+    (tabela_geral_bloco27, "metricas_gerais_teste.csv"),
+    (tabela_classes_bloco27, "metricas_por_classe_teste.csv"),
+]:
+    tabela.to_csv(
+        PASTA_RESULTADOS / nome_arquivo,
+        sep=";",
+        encoding="utf-8-sig",
+        decimal=",",
+        index=False,
+        float_format="%.6f",
+    )
+
+print("\nMétricas gerais no teste reservado:")
+print(
+    tabela_geral_bloco27.to_string(
+        index=False,
+        float_format=lambda valor: f"{valor:.4f}",
+    )
+)
+
+print("\nMétricas por classe no teste reservado:")
+print(
+    tabela_classes_bloco27.to_string(
+        index=False,
+        float_format=lambda valor: f"{valor:.4f}",
+    )
+)
+
+# Figura 7 — Mesmo padrão de espaçamento da Figura 6 salva.
+figura_bloco27, eixos_bloco27 = plt.subplots(
+    3, 3,
+    figsize=(16, 16),
+)
+
+figura_bloco27.canvas.manager.set_window_title(
+    "Figura 7 — Matrizes de confusão no teste"
+)
+
+for eixo, (identificador, nome, _) in zip(
+    eixos_bloco27.flat, modelos_bloco27
+):
+    matriz = matrizes_bloco27[identificador]
+    matriz_proporcao = (
+        matriz / matriz.sum(axis=1, keepdims=True)
+    )
+
+    exibicao = ConfusionMatrixDisplay(
+        confusion_matrix=matriz_proporcao,
+        display_labels=ordem_classes,
+    )
+
+    exibicao.plot(
+        ax=eixo,
+        cmap="Blues",
+        values_format=".1%",
+        colorbar=False,
+        im_kw={"vmin": 0, "vmax": 1},
+    )
+
+    titulo = (
+        f"{nome} (principal)"
+        if identificador == "logistica"
+        else nome
+    )
+
+    eixo.set_title(titulo, fontsize=12, pad=14)
+    eixo.set_xlabel("Classe prevista", fontsize=10, labelpad=8)
+    eixo.set_ylabel("Classe real", fontsize=10, labelpad=8)
+
+    plt.setp(
+        eixo.get_xticklabels(),
+        rotation=30,
+        ha="right",
+        rotation_mode="anchor",
+        fontsize=10,
+    )
+    eixo.tick_params(axis="y", labelsize=10)
+
+    for texto in exibicao.text_.flat:
+        texto.set_fontsize(10)
+
+for eixo in list(eixos_bloco27.flat)[len(modelos_bloco27):]:
+    eixo.axis("off")
+
+figura_bloco27.suptitle(
+    "Figura 7 — Matrizes de confusão no teste reservado\n"
+    "Configurações ajustadas — percentuais por classe real",
+    fontsize=16,
+    y=0.97,
+)
+
+figura_bloco27.subplots_adjust(
+    left=0.09,
+    right=0.97,
+    top=0.89,
+    bottom=0.12,
+    wspace=0.55,
+    hspace=0.85,
+)
+
+figura_bloco27.text(
+    0.5,
+    0.035,
+    "Cada linha soma 100%. Diagonal: acertos; demais células: erros.\n"
+    "Modelo principal definido pela validação antes desta avaliação. "
+    "O teste não orienta novos ajustes.",
+    ha="center",
+    va="bottom",
+    fontsize=10,
+)
+
+arquivo_figura_bloco27 = (
+    PASTA_RESULTADOS
+    / "figura_07_matrizes_confusao_teste.png"
+)
+
+figura_bloco27.savefig(
+    arquivo_figura_bloco27,
+    dpi=300,
+    bbox_inches="tight",
+)
+
+print("\nResultados salvos em:", PASTA_RESULTADOS)
+print("Figura salva:", arquivo_figura_bloco27)
+print(
+    "\nO teste reservado foi utilizado neste bloco "
+    "para a avaliação final."
+)
+print(
+    "Nenhum modelo foi treinado novamente e nenhuma "
+    "busca de parâmetros foi realizada neste bloco."
+)
+print(
+    "A Regressão Logística permanece como modelo principal, "
+    "conforme a decisão registrada antes das previsões."
+)
+print(
+    "Não interpretar pequenas diferenças no teste "
+    "como comprovação de superioridade estatística."
+)
+print(
+    "Limitação já identificada: houve exploração do dataset "
+    "completo antes da divisão treino/teste."
+)
+print(
+    "Os pipelines ainda não foram salvos em arquivos "
+    "para uso no dashboard."
+)
+
+plt.show()
+plt.close(figura_bloco27)
+
+print("\nBloco 27 concluído.")
+
+
 
