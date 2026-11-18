@@ -7313,4 +7313,117 @@ plt.close(figura_bloco27)
 print("\nBloco 27 concluído.")
 
 
+# ============================================================
+# BLOCO 28 — SALVAMENTO DOS PIPELINES E METADADOS
+# ============================================================
+
+import json
+import platform
+from importlib.metadata import version
+from tempfile import TemporaryDirectory
+
+import joblib
+import numpy as np
+
+
+print("\nBLOCO 28 — Salvamento dos pipelines e metadados")
+
+pasta_modelos_bloco28 = PASTA_PROJETO / "modelos"
+
+# Recupera a decisão registrada antes da avaliação no teste.
+with arquivo_decisao_bloco27.open("r", encoding="utf-8") as arquivo:
+    decisao_registrada_bloco28 = json.load(arquivo)
+
+# A mesma amostra de treino é usada para comparar todos os pipelines.
+amostra_treino_bloco28 = X_treino.sample(
+    n=min(30, len(X_treino)),
+    random_state=SEMENTE_ALEATORIA,
+)
+
+metadados_bloco28 = {
+    "versao_formato": 1,
+    "modelo_principal": decisao_registrada_bloco28["modelo_principal"],
+    "criterio_modelo_principal": decisao_registrada_bloco28["criterio"],
+    "decisao_registrada_em_utc": decisao_registrada_bloco28[
+        "registrado_em_utc"
+    ],
+    "versoes": {
+        "python": platform.python_version(),
+        "numpy": version("numpy"),
+        "pandas": version("pandas"),
+        "scipy": version("scipy"),
+        "scikit-learn": version("scikit-learn"),
+        "joblib": version("joblib"),
+    },
+    "entradas": [
+        {"nome": coluna, "tipo": str(tipo)}
+        for coluna, tipo in X_treino.dtypes.items()
+    ],
+    "divisao_dados": {
+        "arquivo_dados": "dataset.csv",
+        "proporcao_teste_configurada": 0.30,
+        "estratificada_pela_classe": True,
+        "semente_aleatoria": SEMENTE_ALEATORIA,
+        "registros_treino": len(X_treino),
+        "registros_teste": len(X_teste),
+    },
+    "verificacao_salvamento": {
+        "origem_amostra": "treino",
+        "registros_amostra": len(amostra_treino_bloco28),
+        "semente_aleatoria": SEMENTE_ALEATORIA,
+    },
+    "modelos": {},
+}
+
+pasta_modelos_bloco28.mkdir(exist_ok=True)
+
+# Prepara e verifica todos os arquivos antes de colocá-los na pasta final.
+with TemporaryDirectory(dir=pasta_modelos_bloco28) as nome_pasta_temporaria:
+    pasta_temporaria_bloco28 = pasta_modelos_bloco28 / nome_pasta_temporaria
+    arquivos_verificados_bloco28 = []
+
+    for identificador, nome, pipeline in modelos_bloco27:
+        arquivo_pipeline = pasta_temporaria_bloco28 / f"{identificador}.joblib"
+
+        previsoes_originais = pipeline.predict(amostra_treino_bloco28)
+        joblib.dump(pipeline, arquivo_pipeline, compress=3)
+
+        pipeline_recarregado = joblib.load(arquivo_pipeline)
+        previsoes_recarregadas = pipeline_recarregado.predict(
+            amostra_treino_bloco28
+        )
+
+        if not np.array_equal(previsoes_originais, previsoes_recarregadas):
+            raise ValueError(
+                f"As previsões do pipeline recarregado diferem: {nome}."
+            )
+
+        metadados_bloco28["modelos"][identificador] = {
+            "nome": nome,
+            "arquivo": arquivo_pipeline.name,
+            "classes": pipeline.named_steps["modelo"].classes_.tolist(),
+            "parametros": decisao_registrada_bloco28["parametros_modelos"][
+                identificador
+            ],
+        }
+        arquivos_verificados_bloco28.append(arquivo_pipeline)
+        print(f"Pipeline recarregado e verificado: {nome}")
+
+    arquivo_metadados_bloco28 = pasta_temporaria_bloco28 / "metadados.json"
+
+    with arquivo_metadados_bloco28.open("w", encoding="utf-8") as arquivo:
+        json.dump(metadados_bloco28, arquivo, ensure_ascii=False, indent=2)
+        arquivo.write("\n")
+
+    for arquivo_pipeline in arquivos_verificados_bloco28:
+        arquivo_pipeline.replace(pasta_modelos_bloco28 / arquivo_pipeline.name)
+
+    arquivo_metadados_bloco28.replace(pasta_modelos_bloco28 / "metadados.json")
+
+print(f"\nPipelines salvos: {len(metadados_bloco28['modelos'])}")
+print(f"Pasta dos modelos: {pasta_modelos_bloco28}")
+print("Metadados salvos em: modelos/metadados.json")
+print("Bloco 28 concluído.")
+
+
 

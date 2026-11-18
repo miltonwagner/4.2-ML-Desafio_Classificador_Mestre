@@ -1,8 +1,8 @@
 ﻿Modelo;Divisões;Tempo OOF total (s)
-Regressão Logística;5;2,968632
-KNN;5;2,823418
-Árvore;5;0,793143
-Random Forest;5;11,367141
-SVM linear;5;10,251440
-SVM RBF;5;10,654070
-Gaussian Naive Bayes;5;0,666558
+Regressão Logística;5;48,858538
+KNN;5;3,024061
+Árvore;5;0,938551
+Random Forest;5;11,425423
+SVM linear;5;10,276537
+SVM RBF;5;10,143617
+Gaussian Naive Bayes;5;0,671894
