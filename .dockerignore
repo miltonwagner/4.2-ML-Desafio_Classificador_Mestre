@@ -1,0 +1,8 @@
+**
+!Dockerfile
+!requirements.txt
+!app.py
+!resultados/
+resultados/**
+!resultados/*.csv
+!resultados/*.png
