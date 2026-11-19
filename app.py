@@ -141,6 +141,14 @@ with metodologia:
         "A análise representa esse cenário acadêmico."
     )
 
+    st.subheader("Pré-processamento dos dados")
+    st.markdown(
+        "As variáveis numéricas foram padronizadas com `StandardScaler`, "
+        "as categóricas foram codificadas com `OneHotEncoder` e as binárias "
+        "foram mantidas como 0 ou 1. Na validação cruzada, o pré-processamento "
+        "foi ajustado apenas com os dados de treino de cada divisão."
+    )
+
 with evidencia:
     st.header("Por que a Regressão Logística?")
     consolidado = ler_csv("comparacao_iniciais_ajustados_consolidada.csv")
@@ -240,6 +248,11 @@ with figuras:
          "As linhas mostram a classe real e as colunas mostram a previsão. Leia os percentuais por linha. Examine a classe Matriculado, que teve o menor F1 nos sete modelos."),
         ("7 · Matrizes no conjunto de teste", "figura_07_matrizes_confusao_teste.png",
          "Compare as diagonais para ver a proporção de acertos dentro de cada classe real. Os demais valores mostram para quais classes os registros foram encaminhados pelo modelo."),
+        ("8 · Desempenho acadêmico por classe no treino",
+         "figura_08_desempenho_por_classe_treino.png",
+         "No conjunto de treino, a mediana de aprovações no segundo semestre "
+         "foi de 0 para evasão, 4 para matriculados e 6 para formados. "
+         "As distribuições se sobrepõem entre as classes."),
     ]
     titulo = st.selectbox("Selecione uma figura", [titulo for titulo, _, _ in itens])
     _, nome_arquivo, comentario = next(item for item in itens if item[0] == titulo)
@@ -250,7 +263,3 @@ with figuras:
         st.image(str(arquivo_figura))
     else:
         st.warning(f"Figura ausente em resultados: {nome_arquivo}")
-
-
-
-
