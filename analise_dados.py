@@ -1276,6 +1276,104 @@ print("\nNenhum modelo foi treinado neste bloco.")
 print("\nBloco 9 concluído.")
 
 # %% ==========================================================
+# BLOCO 9A — Desempenho acadêmico por classe no treino
+# =============================================================
+
+import matplotlib.pyplot as plt
+
+print("\n" + "=" * 70)
+print("BLOCO 9A — DESEMPENHO ACADÊMICO POR CLASSE NO TREINO")
+print("=" * 70)
+
+variaveis_9a = [
+    ("Curricular units 1st sem (grade)", "Nota média — 1º semestre", "Nota"),
+    ("Curricular units 2nd sem (grade)", "Nota média — 2º semestre", "Nota"),
+    ("Curricular units 1st sem (approved)", "Aprovações — 1º semestre", "Disciplinas aprovadas"),
+    ("Curricular units 2nd sem (approved)", "Aprovações — 2º semestre", "Disciplinas aprovadas"),
+]
+
+classes_9a = ["Dropout", "Enrolled", "Graduate"]
+rotulos_9a = ["Evasão", "Matriculado", "Formado"]
+cores_9a = ["#C96C56", "#D7AB4C", "#4F8C79"]
+
+colunas_9a = [coluna for coluna, _, _ in variaveis_9a]
+dados_9a = X_treino[colunas_9a].assign(**{ALVO: y_treino})
+grupos_9a = dados_9a.groupby(ALVO, sort=False)
+
+contagens_9a = grupos_9a.size().reindex(classes_9a)
+rotulos_com_contagem_9a = [
+    f"{rotulo}\n(n = {contagens_9a.loc[classe]})"
+    for classe, rotulo in zip(classes_9a, rotulos_9a)
+]
+
+resumo_9a = grupos_9a[colunas_9a].median().reindex(classes_9a)
+resumo_9a = resumo_9a.rename(
+    columns={
+        coluna: f"Mediana — {titulo}"
+        for coluna, titulo, _ in variaveis_9a
+    }
+)
+resumo_9a.insert(0, "Estudantes", contagens_9a)
+resumo_9a.insert(0, "Situação acadêmica", rotulos_9a)
+resumo_9a = resumo_9a.reset_index()
+
+figura_9a, eixos_9a = plt.subplots(
+    2, 2, figsize=(12, 8), constrained_layout=True
+)
+figura_9a.suptitle(
+    f"Desempenho acadêmico por classe no treino (n = {len(dados_9a)})",
+    fontsize=15,
+)
+
+for eixo, (coluna, titulo, unidade) in zip(eixos_9a.flat, variaveis_9a):
+    valores_por_classe = [
+        grupos_9a.get_group(classe)[coluna].to_numpy()
+        for classe in classes_9a
+    ]
+
+    caixas = eixo.boxplot(
+        valores_por_classe,
+        patch_artist=True,
+        medianprops={"color": "#1F2937", "linewidth": 2},
+        flierprops={"markersize": 2, "alpha": 0.35},
+    )
+
+    for caixa, cor in zip(caixas["boxes"], cores_9a):
+        caixa.set_facecolor(cor)
+        caixa.set_alpha(0.75)
+
+    eixo.set_xticks([1, 2, 3], rotulos_com_contagem_9a)
+    eixo.set_title(titulo)
+    eixo.set_ylabel(unidade)
+    eixo.grid(axis="y", alpha=0.25)
+    eixo.set_axisbelow(True)
+
+pasta_saidas_9a = PASTA_PROJETO / "resultados"
+pasta_saidas_9a.mkdir(parents=True, exist_ok=True)
+
+arquivo_figura_9a = pasta_saidas_9a / "figura_08_desempenho_por_classe_treino.png"
+arquivo_resumo_9a = pasta_saidas_9a / "resumo_desempenho_por_classe_treino.csv"
+
+figura_9a.savefig(arquivo_figura_9a, dpi=180, bbox_inches="tight")
+plt.close(figura_9a)
+
+resumo_9a.to_csv(
+    arquivo_resumo_9a,
+    index=False,
+    sep=";",
+    encoding="utf-8-sig",
+    decimal=",",
+    float_format="%.2f",
+)
+
+print(f"\nRegistros de treino analisados: {len(dados_9a)}")
+print(resumo_9a.round(2).to_string(index=False))
+print(f"\nFigura salva em: {arquivo_figura_9a}")
+print(f"Tabela salva em: {arquivo_resumo_9a}")
+print("\nBloco 9A concluído.")
+
+
+# %% ==========================================================
 # BLOCO 10 — Preparação do pré-processamento
 # =============================================================
 

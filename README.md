@@ -6,7 +6,7 @@ Projeto de Aprendizagem de Máquina do curso de Desenvolvimento de Software Mult
 
 ## Dados
 
-A base reúne 4.424 registros de estudantes do Instituto Politécnico de Portalegre, no Alto Alentejo, Portugal, com matrículas entre os anos letivos de 2008/2009 e 2018/2019. Contém 34 variáveis preditoras e a variável alvo `Target`. A auditoria encontrou zero valores ausentes e zero linhas integralmente duplicadas.
+A base reúne 4.424 registros de estudantes do Instituto Politécnico de Portalegre, no Alto Alentejo, Portugal, com matrículas entre os anos letivos de 2008/2009 e 2018/2019. O arquivo `dataset.csv` contém 4.424 linhas de dados, além do cabeçalho, e 35 colunas: 34 variáveis preditoras e a variável alvo `Target`. O artigo que descreve a base foi publicado em 2022. A auditoria encontrou zero valores ausentes e zero linhas integralmente duplicadas.
 
 | Classe | Significado | Registros |
 | --- | --- | ---: |
